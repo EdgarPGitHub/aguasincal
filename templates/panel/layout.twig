@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{% block titulo %}Panel{% endblock %} · {{ site.nombre }}</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="{{ asset('css/estilos.css') }}">
+</head>
+<body class="panel">
+<header class="panel__cabecera">
+  <div class="contenedor panel__fila">
+    <a class="logo" href="{{ base }}">{% include 'components/logo.twig' %}<span class="panel__etiqueta">Panel</span></a>
+    {% if usuario %}
+    <nav class="panel__nav" aria-label="Panel">
+      <a href="{{ base }}"{{ ruta in ['leads', 'lead'] ? ' aria-current="page"' }}>Leads</a>
+      <a href="{{ base }}?r=nuevo"{{ ruta == 'nuevo' ? ' aria-current="page"' }}>+ Lead manual</a>
+      <a href="{{ base }}?r=cobertura"{{ ruta == 'cobertura' ? ' aria-current="page"' }}>Cobertura</a>
+      <a href="{{ base }}?r=profesionales"{{ ruta in ['profesionales', 'profesional'] ? ' aria-current="page"' }}>Profesionales</a>
+      <a href="{{ base }}?r=clics"{{ ruta == 'clics' ? ' aria-current="page"' }}>Clics</a>
+      <a href="{{ base }}?r=clave"{{ ruta == 'clave' ? ' aria-current="page"' }}>Contraseña</a>
+      <form method="post" action="{{ base }}?r=salir"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="enlace" type="submit">Salir</button></form>
+    </nav>
+    {% endif %}
+  </div>
+</header>
+<main class="contenedor panel__main">
+{% block contenido %}{% endblock %}
+</main>
+<script src="{{ asset('js/app.js') }}" defer></script>
+</body>
+</html>

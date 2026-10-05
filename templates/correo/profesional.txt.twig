@@ -1,0 +1,24 @@
+{% autoescape false %}
+Hola, {{ profesional.nombre_comercial }}:
+
+Te pasamos un nuevo cliente de {{ site.nombre }}. Por favor, contacta con él en las próximas 24 horas.
+
+Servicio:   {{ servicios[lead.servicio].formulario ?? lead.servicio }}{% if lead.modalidad %} ({{ modalidades[lead.modalidad] ?? lead.modalidad }}){% endif %}
+
+Cliente:    {{ tipos_cliente[lead.tipo_cliente] ?? lead.tipo_cliente }}
+Nombre:     {{ lead.nombre }}
+Teléfono:   {{ lead.telefono }}
+Email:      {{ lead.email ?: '-' }}
+Zona:       {{ lead.municipio ?: '-' }} · CP {{ lead.cp }} · {{ provincias[lead.provincia].nombre ?? lead.provincia }}
+{% if lead.personas %}Personas:   {{ lead.personas }}
+{% endif %}
+Mensaje:    {{ lead.mensaje ?: '-' }}
+
+Referencia: lead #{{ lead.id }}
+
+Si el contacto no es válido (teléfono erróneo, duplicado, fuera de zona…), responde a este email indicando la referencia y el motivo.
+
+Recuerda: estos datos se te ceden solo para preparar el presupuesto de esta solicitud.
+
+{{ site.nombre }}
+{% endautoescape %}

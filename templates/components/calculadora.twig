@@ -1,0 +1,25 @@
+{#-
+  Calculadora de descalcificador. Funciona sin JavaScript (tabla precalculada en el servidor)
+  y con JavaScript permite elegir personas y dureza. Parámetros: fh (o null), dimensionados (tabla)
+-#}
+<div class="calculadora tarjeta" data-calculadora data-fh="{{ fh ?? '' }}">
+  <div class="campos">
+    <label class="campo"><span>Personas en casa</span>
+      <input type="number" name="personas" min="1" max="20" value="4" inputmode="numeric">
+    </label>
+    <label class="campo"><span>Dureza del agua (°fH)</span>
+      <input type="number" name="dureza" min="0" max="120" step="0.1" value="{{ fh ?? 35 }}" inputmode="decimal">
+    </label>
+  </div>
+  <output class="calculadora__resultado" aria-live="polite" hidden></output>
+  {% if fh is not null and dimensionados ?? [] %}
+  <div class="tabla-scroll calculadora__tabla">
+    <table>
+      <caption>Estimación con {{ fh|num(1) }} °fH</caption>
+      <thead><tr><th scope="col">Personas</th><th scope="col">Resina</th><th scope="col">Sal al año</th></tr></thead>
+      <tbody>{% for d in dimensionados %}<tr><th scope="row">{{ d.personas }}</th><td>{{ d.litros_resina }} L</td><td>≈ {{ d.sal_kg_anual }} kg</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+  {% endif %}
+  <p class="nota">Estimación orientativa para una vivienda (140 L por persona y día, dureza final de 8 °fH). Un técnico ajusta el equipo a tu instalación.</p>
+</div>

@@ -1,0 +1,53 @@
+{% extends 'base.twig' %}
+{% block contenido %}
+<div class="contenedor columnas">
+  <article class="columnas__principal">
+    <header class="cabecera-pagina">
+      <h1>{{ pagina.titulo }}</h1>
+      <p class="entradilla">{{ pagina.entradilla }}</p>
+    </header>
+
+    {% if municipios %}
+    <div class="resumen-provincia rejilla rejilla--3">
+      <div class="dato"><span class="dato__valor">{{ resumen.media_fh|num }} °fH</span><span class="dato__nombre">dureza media</span></div>
+      <div class="dato"><span class="dato__valor">{{ resumen.pct_duras|num }} %</span><span class="dato__nombre">de municipios con agua dura o muy dura</span></div>
+      <div class="dato"><span class="dato__valor">{{ municipios|length }}</span><span class="dato__nombre">municipios con datos</span></div>
+    </div>
+
+    <section class="bloque">
+      <h2>Dureza del agua por municipio</h2>
+      <p class="nota">Pulsa en las cabeceras para ordenar. Datos oficiales del SINAC; la fecha indica la última muestra publicada.</p>
+      <div class="tabla-scroll">
+      <table class="tabla-municipios" data-ordenable>
+        <thead><tr>
+          <th scope="col" data-tipo="texto">Municipio</th>
+          <th scope="col" data-tipo="numero">Dureza (°fH)</th>
+          <th scope="col">Clasificación</th>
+          <th scope="col" data-tipo="texto">Última muestra</th>
+        </tr></thead>
+        <tbody>
+        {% for m in municipios %}
+          <tr>
+            <th scope="row">{% if m.ruta %}<a href="{{ m.ruta }}">{{ m.nombre }}</a>{% else %}{{ m.nombre }}{% endif %}</th>
+            <td data-valor="{{ m.dureza_fh }}">{{ m.dureza_fh|num(1) }}{% if m.min_fh != m.max_fh %} <small>({{ m.min_fh|num }}–{{ m.max_fh|num }})</small>{% endif %}</td>
+            <td><span class="etiqueta etiqueta--{{ dureza(m.dureza_fh).clave }}">{{ dureza(m.dureza_fh).nombre }}</span></td>
+            <td data-valor="{{ m.fecha }}">{{ m.fecha|fecha(true) }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </section>
+    {% else %}
+    <p class="aviso">Estamos preparando los datos oficiales de esta provincia. Mientras tanto, un profesional puede medir la dureza en tu casa.</p>
+    {% endif %}
+
+    <div class="prosa">{{ contenido_html|raw }}</div>
+  </article>
+  <aside class="columnas__lateral">
+    <div class="tarjeta pegajosa">
+      {% include 'components/formulario.twig' with {servicio: 'descalcificadores', origen: pagina.ruta, titulo: '¿Agua dura en ' ~ provincia_nombre ~ '?', texto: 'Pide presupuesto de descalcificador u ósmosis.'} only %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

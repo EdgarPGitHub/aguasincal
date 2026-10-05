@@ -1,0 +1,9 @@
+/vendor/
+/dist/
+/var/
+/.phpunit.cache/
+/node_modules/
+config.local.php
+*.sqlite
+*.sqlite-*
+.env

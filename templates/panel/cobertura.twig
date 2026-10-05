@@ -1,0 +1,57 @@
+{% extends 'panel/layout.twig' %}
+{% block titulo %}Cobertura{% endblock %}
+{% block contenido %}
+<h1>Cobertura por provincia</h1>
+<p class="nota">«Activo»: los leads de esa provincia y servicio se asignan al profesional y te llegan con botones para enviárselos. «Espera»: se recogen en lista de espera, sin pasarlos a nadie. Si un profesional se satura, pon su provincia en espera.</p>
+{% if aviso %}<p class="aviso aviso--ok" role="status">{{ aviso }}</p>{% endif %}
+{% if error %}<p class="aviso aviso--error" role="alert">{{ error }}</p>{% endif %}
+{% if not profesionales %}<p class="aviso aviso--espera">Primero da de alta un profesional en <a href="{{ base }}?r=profesionales">Profesionales</a>.</p>{% endif %}
+
+{% if editar and provincias[editar] is defined %}
+<form method="post" class="tarjeta" action="{{ base }}?r=cobertura&amp;provincia={{ editar }}">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="provincia" value="{{ editar }}">
+  <h2>{{ provincias[editar].nombre }}</h2>
+  <div class="tabla-scroll"><table class="tabla-panel">
+    <thead><tr><th>Servicio</th><th>Modo</th><th>Profesional</th></tr></thead>
+    <tbody>
+    {% for slug, s in servicios %}
+      {% set fila = mapa[editar][slug] ?? null %}
+      <tr>
+        <th scope="row">{{ s.nombre }}</th>
+        <td><select name="modo[{{ slug }}]" aria-label="Modo {{ s.nombre }}">
+          <option value="espera"{{ (fila.modo ?? 'espera') == 'espera' ? ' selected' }}>Espera</option>
+          <option value="activo"{{ (fila.modo ?? '') == 'activo' ? ' selected' }}>Activo</option>
+        </select></td>
+        <td><select name="profesional[{{ slug }}]" aria-label="Profesional {{ s.nombre }}">
+          <option value="0">–</option>
+          {% for p in profesionales %}<option value="{{ p.id }}"{{ p.id == (fila.profesional_id ?? 0) ? ' selected' }}>{{ p.nombre_comercial }}{{ p.activo ? '' : ' (inactivo)' }}</option>{% endfor %}
+        </select></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <button class="boton" type="submit">Guardar {{ provincias[editar].nombre }}</button>
+  <a class="boton boton--sec" href="{{ base }}?r=cobertura">Cancelar</a>
+</form>
+{% endif %}
+
+<div class="tabla-scroll">
+<table class="tabla-panel tabla-cobertura">
+  <thead><tr><th>Provincia</th>{% for slug, s in servicios %}<th>{{ s.nombre }}</th>{% endfor %}<th>Leads en espera (90 días)</th><th></th></tr></thead>
+  <tbody>
+  {% for codigo, p in provincias %}
+    <tr>
+      <th scope="row">{{ p.nombre }}{% if zonas_publicadas[codigo] is defined %} <span class="etiqueta">con páginas</span>{% endif %}</th>
+      {% for slug, s in servicios %}
+        {% set fila = mapa[codigo][slug] ?? null %}
+        <td>{% if fila and fila.modo == 'activo' %}<span class="estado estado--enviado">Activo</span>{% else %}<span class="estado estado--espera">Espera</span>{% endif %}</td>
+      {% endfor %}
+      <td>{% if demanda[codigo] is defined %}<b>{{ demanda[codigo] }}</b>{% else %}0{% endif %}</td>
+      <td><a href="{{ base }}?r=cobertura&amp;provincia={{ codigo }}">Editar</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

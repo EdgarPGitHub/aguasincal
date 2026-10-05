@@ -1,0 +1,25 @@
+{% extends 'panel/layout.twig' %}
+{% block titulo %}Lead manual{% endblock %}
+{% block contenido %}
+<h1>Alta de lead (teléfono o WhatsApp)</h1>
+<p class="nota">Antes de guardarlo, informa a la persona de que guardamos sus datos para gestionar su solicitud y, si hay profesional en su zona, se los pasaremos para el presupuesto.</p>
+<form method="post" class="tarjeta">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="campos campos--2">
+    <label class="campo"><span>Entró por</span><select name="origen"><option value="telefono"{{ datos.origen == 'telefono' ? ' selected' }}>Teléfono</option><option value="whatsapp"{{ datos.origen == 'whatsapp' ? ' selected' }}>WhatsApp</option></select></label>
+    <label class="campo{{ errores.servicio is defined ? ' campo--error' }}"><span>Servicio</span>
+      <select name="servicio"><option value="">Elige</option>{% for k, s in servicios %}<option value="{{ k }}"{{ k == datos.servicio ? ' selected' }}>{{ s.formulario }}</option>{% endfor %}</select>
+    </label>
+    <label class="campo"><span>Tipo de cliente</span><select name="tipo">{% for k, v in tipos_cliente %}<option value="{{ k }}"{{ k == datos.tipo_cliente ? ' selected' }}>{{ v }}</option>{% endfor %}</select></label>
+    <label class="campo"><span>Compra o alquiler</span><select name="modalidad"><option value="">–</option>{% for k, v in modalidades %}<option value="{{ k }}"{{ k == datos.modalidad ? ' selected' }}>{{ v }}</option>{% endfor %}</select></label>
+    <label class="campo{{ errores.cp is defined ? ' campo--error' }}"><span>Código postal</span><input name="cp" inputmode="numeric" maxlength="5" value="{{ datos.cp }}">{% if errores.cp is defined %}<em class="error">{{ errores.cp }}</em>{% endif %}</label>
+    <label class="campo"><span>Municipio</span><input name="municipio" value="{{ datos.municipio }}"></label>
+    <label class="campo{{ errores.nombre is defined ? ' campo--error' }}"><span>Nombre</span><input name="nombre" value="{{ datos.nombre }}">{% if errores.nombre is defined %}<em class="error">{{ errores.nombre }}</em>{% endif %}</label>
+    <label class="campo{{ errores.telefono is defined ? ' campo--error' }}"><span>Teléfono</span><input name="telefono" value="{{ datos.telefono }}">{% if errores.telefono is defined %}<em class="error">{{ errores.telefono }}</em>{% endif %}</label>
+    <label class="campo"><span>Email</span><input name="email" type="email" value="{{ datos.email }}"></label>
+    <label class="campo"><span>Personas</span><input name="personas" type="number" min="1" max="50" value="{{ datos.personas }}"></label>
+  </div>
+  <label class="campo"><span>Detalles</span><textarea name="mensaje" rows="3">{{ datos.mensaje }}</textarea></label>
+  <button class="boton" type="submit">Guardar lead</button>
+</form>
+{% endblock %}

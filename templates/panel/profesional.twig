@@ -1,0 +1,19 @@
+{% extends 'panel/layout.twig' %}
+{% block titulo %}{{ id ? 'Editar' : 'Nuevo' }} profesional{% endblock %}
+{% block contenido %}
+<p><a href="{{ base }}?r=profesionales">← Profesionales</a></p>
+<h1>{{ id ? 'Editar' : 'Nuevo' }} profesional</h1>
+<form method="post" class="tarjeta">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="campos campos--2">
+    <label class="campo{{ errores.nombre_comercial is defined ? ' campo--error' }}"><span>Nombre comercial (se muestra al cliente)</span><input name="nombre_comercial" required value="{{ datos.nombre_comercial }}">{% if errores.nombre_comercial is defined %}<em class="error">{{ errores.nombre_comercial }}</em>{% endif %}</label>
+    <label class="campo"><span>Razón social (texto legal de cesión de datos)</span><input name="razon_social" value="{{ datos.razon_social }}"></label>
+    <label class="campo{{ errores.email is defined ? ' campo--error' }}"><span>Email para recibir leads</span><input name="email" type="email" value="{{ datos.email }}">{% if errores.email is defined %}<em class="error">{{ errores.email }}</em>{% endif %}</label>
+    <label class="campo{{ errores.whatsapp is defined ? ' campo--error' }}"><span>WhatsApp (con prefijo, p. ej. 34600000000)</span><input name="whatsapp" inputmode="numeric" value="{{ datos.whatsapp }}">{% if errores.whatsapp is defined %}<em class="error">{{ errores.whatsapp }}</em>{% endif %}</label>
+    <label class="campo{{ errores.precio_lead is defined ? ' campo--error' }}"><span>Precio por lead (€)</span><input name="precio_lead" inputmode="decimal" value="{{ datos.precio_lead }}"></label>
+    <label class="consentimiento"><input type="checkbox" name="activo" value="1"{{ datos.activo ? ' checked' }}> <span>Activo</span></label>
+  </div>
+  <label class="campo"><span>Notas (acuerdo, capacidad, horarios…)</span><textarea name="notas" rows="4">{{ datos.notas }}</textarea></label>
+  <button class="boton" type="submit">Guardar</button>
+</form>
+{% endblock %}

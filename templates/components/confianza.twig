@@ -1,0 +1,11 @@
+<ul class="confianza" aria-label="Por qué AguaSinCal">
+  <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.6-4.6 1.4 1.4-6 6Z"/></svg><span><b>Profesionales verificados</b> de tu zona</span></li>
+  <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-6h2v6Zm0-8h-2V7h2v2Z"/></svg><span><b>Datos oficiales</b> de dureza (SINAC)</span></li>
+  <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6h-3V4c0-1.1-.9-2-2-2H9C7.9 2 7 2.9 7 4v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2ZM9 4h6v2H9V4Zm3 14a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg><span><b>Gratis y sin compromiso</b>, compra o alquiler</span></li>
+</ul>
+{% if site.marcas %}
+<div class="marcas">
+  <p>Trabajamos con</p>
+  <ul>{% for m in site.marcas %}<li>{% if m.url ?? '' %}<a href="{{ m.url }}" rel="noopener">{% endif %}<img src="{{ m.logo }}" alt="{{ m.nombre }}" loading="lazy" height="36">{% if m.url ?? '' %}</a>{% endif %}</li>{% endfor %}</ul>
+</div>
+{% endif %}

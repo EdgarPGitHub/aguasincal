@@ -1,0 +1,14 @@
+{% extends 'panel/layout.twig' %}
+{% block titulo %}Entrar{% endblock %}
+{% block contenido %}
+<div class="tarjeta panel__acceso">
+  <h1>Entrar al panel</h1>
+  {% if error %}<p class="aviso aviso--error" role="alert">{{ error }}</p>{% endif %}
+  <form method="post" action="{{ base }}?r=login">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label class="campo"><span>Email</span><input type="email" name="email" autocomplete="username" required></label>
+    <label class="campo"><span>Contraseña</span><input type="password" name="clave" autocomplete="current-password" required></label>
+    <button class="boton boton--ancho" type="submit">Continuar</button>
+  </form>
+</div>
+{% endblock %}

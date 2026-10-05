@@ -1,0 +1,16 @@
+{% autoescape false %}
+Hola, {{ lead.nombre }}:
+
+Hemos recibido tu solicitud de {{ (servicios[lead.servicio].formulario ?? lead.servicio)|lower }} (CP {{ lead.cp }}).
+
+{% if lead.modo == 'activo' %}
+Te llamará {{ profesional.nombre_comercial ?? 'un profesional verificado de tu zona' }} para preparar el presupuesto, normalmente en menos de 24 horas laborables. Es gratis y sin compromiso.
+{% else %}
+Ahora mismo no tenemos un profesional verificado en tu zona para este servicio. Te avisaremos en cuanto lo tengamos y, solo si nos lo confirmas, le pasaremos tu solicitud.
+{% endif %}
+
+Si no has sido tú quien ha hecho la solicitud o quieres que borremos tus datos, responde a este email.
+
+Gracias,
+{{ site.nombre }} · {{ site.url }}
+{% endautoescape %}

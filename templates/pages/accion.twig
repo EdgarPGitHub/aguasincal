@@ -1,0 +1,33 @@
+{% extends 'base.twig' %}
+{% block contenido %}
+<div class="contenedor contenedor--form">
+  <div class="tarjeta resultado">
+  {% if error is defined %}
+    <h1>No se ha podido completar</h1>
+    <p class="aviso aviso--error">{{ error }}</p>
+  {% elseif hecho is defined %}
+    <h1>Hecho</h1>
+    <p class="aviso aviso--ok">{{ hecho }}</p>
+    {% if whatsapp_url is defined %}<p><a class="boton" href="{{ whatsapp_url }}" rel="noopener">Abrir WhatsApp</a></p>{% endif %}
+  {% else %}
+    <h1>{{ accion_nombre }}</h1>
+    <p>Lead <b>#{{ lead.id }}</b>: {{ servicios[lead.servicio].formulario }}, CP {{ lead.cp }}{% if lead.municipio %} ({{ lead.municipio }}){% endif %}, {{ lead.nombre }}.</p>
+    {% if lead.enviado and accion starts with 'enviar' %}
+      <p class="aviso aviso--espera">Este lead ya se envió el {{ lead.enviado|fecha }}. Si continúas se enviará otra vez.</p>
+    {% endif %}
+    {% if accion starts with 'enviar' %}
+      <p>Profesional: <b>{{ profesional.nombre_comercial ?? 'sin asignar' }}</b></p>
+    {% endif %}
+    <form method="post" action="/accion/">
+      <input type="hidden" name="t" value="{{ token }}">
+      {% if accion == 'invalido' %}
+        <label class="campo"><span>Motivo</span>
+          <select name="motivo">{% for clave, nombre in motivos %}<option value="{{ clave }}">{{ nombre }}</option>{% endfor %}</select>
+        </label>
+      {% endif %}
+      <button class="boton" type="submit">Confirmar</button>
+    </form>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}

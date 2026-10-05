@@ -1,0 +1,16 @@
+{% extends 'panel/layout.twig' %}
+{% block titulo %}Contraseña{% endblock %}
+{% block contenido %}
+<div class="tarjeta panel__acceso">
+  <h1>Cambiar contraseña</h1>
+  {% if aviso %}<p class="aviso aviso--ok" role="status">{{ aviso }}</p>{% endif %}
+  {% if error %}<p class="aviso aviso--error" role="alert">{{ error }}</p>{% endif %}
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label class="campo"><span>Contraseña actual</span><input type="password" name="actual" autocomplete="current-password" required></label>
+    <label class="campo"><span>Nueva contraseña (mínimo 12 caracteres)</span><input type="password" name="nueva" autocomplete="new-password" minlength="12" required></label>
+    <label class="campo"><span>Repite la nueva contraseña</span><input type="password" name="repetir" autocomplete="new-password" minlength="12" required></label>
+    <button class="boton boton--ancho" type="submit">Cambiar</button>
+  </form>
+</div>
+{% endblock %}

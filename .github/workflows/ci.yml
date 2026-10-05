@@ -1,0 +1,39 @@
+# Comprobaciones en cada push y pull request: sintaxis, tests y generación de la web con sus controles SEO.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  comprobar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring, intl
+          coverage: none
+
+      - name: Instalar dependencias
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Auditoría de dependencias
+        run: composer audit --no-interaction
+
+      - name: Sintaxis PHP
+        run: find app build scripts config tests -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+
+      - name: Tests
+        run: vendor/bin/phpunit
+
+      - name: Generar la web con los datos reales (controles SEO)
+        run: php build/build.php --salida=dist
+
+      - name: Generar la web con datos de prueba (cubre las plantillas de dureza)
+        run: php build/build.php --salida=dist-prueba --datos=tests/fixtures/data --hoy=2026-10-05

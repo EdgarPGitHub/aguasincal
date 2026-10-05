@@ -1,0 +1,14 @@
+{% extends 'panel/layout.twig' %}
+{% block titulo %}Clics{% endblock %}
+{% block contenido %}
+<h1>Clics en Llamar y WhatsApp (30 días)</h1>
+<p class="nota">Cuenta las pulsaciones en los botones, no las llamadas reales. Sirve para ver qué páginas generan más contactos directos.</p>
+<div class="tabla-scroll">
+<table class="tabla-panel">
+  <thead><tr><th>Página</th><th>Tipo</th><th>Clics</th></tr></thead>
+  <tbody>
+  {% for f in filas %}<tr><td>{{ f.pagina }}</td><td>{{ f.tipo }}</td><td>{{ f.total }}</td></tr>{% else %}<tr><td colspan="3">Sin clics todavía.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

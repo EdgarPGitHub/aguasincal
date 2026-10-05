@@ -1,0 +1,104 @@
+{#- Layout común de la web pública (páginas estáticas y formulario PHP). -#}
+{%- set cubierta = cubierta ?? false -%}
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ pagina.seo_title ?? (pagina.titulo ~ ' | ' ~ site.nombre) }}</title>
+{% if pagina.descripcion ?? '' %}<meta name="description" content="{{ pagina.descripcion }}">{% endif %}
+{% if pagina.indexable ?? false %}
+<link rel="canonical" href="{{ url_abs(pagina.ruta) }}">
+{% else %}
+<meta name="robots" content="noindex, follow">
+{% endif %}
+<meta property="og:type" content="{{ pagina.og_type ?? 'website' }}">
+<meta property="og:title" content="{{ pagina.seo_title ?? pagina.titulo }}">
+{% if pagina.descripcion ?? '' %}<meta property="og:description" content="{{ pagina.descripcion }}">{% endif %}
+<meta property="og:url" content="{{ url_abs(pagina.ruta) }}">
+<meta property="og:site_name" content="{{ site.nombre }}">
+<meta property="og:locale" content="es_ES">
+<meta name="theme-color" content="#0b3a66">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="{{ asset('css/estilos.css') }}">
+{% for bloque in pagina.schema ?? [] %}
+<script type="application/ld+json">{{ bloque|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_HEX_TAG'))|raw }}</script>
+{% endfor %}
+</head>
+<body class="{{ body_class ?? '' }}">
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+<header class="cabecera">
+  <div class="contenedor cabecera__fila">
+    <a class="logo" href="/" aria-label="{{ site.nombre }}, inicio">
+      {% include 'components/logo.twig' %}
+    </a>
+    <button class="menu__boton" type="button" aria-expanded="false" aria-controls="menu-principal" hidden>
+      <span class="menu__barras" aria-hidden="true"><span></span><span></span><span></span></span><span class="menu__texto">Menú</span>
+    </button>
+    <nav class="menu__nav" id="menu-principal" aria-label="Principal">
+      <a href="/descalcificadores/">Descalcificadores</a>
+      <a href="/osmosis-inversa/">Ósmosis</a>
+      <a href="/fuentes-agua-empresas/">Fuentes de agua</a>
+      <a href="/mantenimiento-reparacion/">Mantenimiento</a>
+      <a href="/dureza-agua/">Dureza del agua</a>
+      <a href="/guias/">Guías</a>
+      <a class="boton boton--peque" href="/presupuesto/">Pedir presupuesto</a>
+    </nav>
+  </div>
+</header>
+
+<main id="contenido">
+{% if pagina.breadcrumbs ?? [] %}
+  <nav class="contenedor migas" aria-label="Estás en">
+    <ol>
+      <li><a href="/">Inicio</a></li>
+      {% for miga in pagina.breadcrumbs %}
+        <li>{% if not loop.last %}<a href="{{ miga.ruta }}">{{ miga.nombre }}</a>{% else %}<span aria-current="page">{{ miga.nombre }}</span>{% endif %}</li>
+      {% endfor %}
+    </ol>
+  </nav>
+{% endif %}
+{% block contenido %}{% endblock %}
+</main>
+
+<footer class="pie">
+  <div class="contenedor pie__rejilla">
+    <div>
+      <a class="logo logo--pie" href="/">{% include 'components/logo.twig' %}</a>
+      <p>Te ponemos en contacto con profesionales verificados de tratamiento de agua. Gratis y sin compromiso.</p>
+      {% if site.telefono_visible %}<p><a href="tel:+{{ site.telefono_enlace }}" data-evento="llamar">{{ site.telefono_visible }}</a></p>{% endif %}
+    </div>
+    <nav aria-label="Servicios">
+      <h2>Servicios</h2>
+      {% for slug, s in servicios %}{% if s.hub %}<a href="/{{ slug }}/">{{ s.nombre }}</a>{% endif %}{% endfor %}
+      <a href="/osmosis-hosteleria/">Ósmosis para hostelería</a>
+    </nav>
+    <nav aria-label="Información">
+      <h2>Información</h2>
+      <a href="/dureza-agua/">Dureza del agua por municipio</a>
+      <a href="/calculadora-descalcificador/">Calculadora de descalcificador</a>
+      <a href="/guias/">Guías</a>
+      <a href="/como-funciona/">Cómo funciona</a>
+      <a href="/quienes-somos/">Quiénes somos</a>
+      <a href="/metodologia-datos/">De dónde salen los datos</a>
+    </nav>
+    <nav aria-label="Legal">
+      <h2>Legal</h2>
+      <a href="/aviso-legal/">Aviso legal</a>
+      <a href="/privacidad/">Privacidad</a>
+      <a href="/cookies/">Cookies</a>
+    </nav>
+  </div>
+  <div class="contenedor pie__legal">
+    <p>© {{ anio }} {{ site.nombre }}. Datos de calidad del agua: SINAC, Ministerio de Sanidad.</p>
+  </div>
+</footer>
+
+<div class="barra-movil" role="navigation" aria-label="Contacto rápido">
+  <a class="boton" href="/presupuesto/">Pedir presupuesto</a>
+  {% if cubierta and site.telefono_enlace %}<a class="boton boton--sec" href="tel:+{{ site.telefono_enlace }}" data-evento="llamar">Llamar</a>{% endif %}
+  {% if cubierta and site.whatsapp %}<a class="boton boton--sec" href="{{ whatsapp_url('Hola, vengo de aguasincal.es (' ~ pagina.ruta ~ ')') }}" data-evento="whatsapp" rel="nofollow">WhatsApp</a>{% endif %}
+</div>
+<script src="{{ asset('js/app.js') }}" defer></script>
+</body>
+</html>

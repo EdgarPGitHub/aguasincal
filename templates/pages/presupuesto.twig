@@ -1,0 +1,119 @@
+{% extends 'base.twig' %}
+{% set body_class = 'pagina-form' %}
+{% block contenido %}
+<div class="contenedor contenedor--form">
+{% if paso == 'gracias' %}
+  <div class="tarjeta resultado">
+    <h1>¡Solicitud recibida!</h1>
+    {% if modo == 'activo' %}
+      <p class="entradilla">Hemos pasado tu solicitud a revisión. Te llamará un profesional verificado de tu zona, normalmente en menos de 24 horas laborables.</p>
+      <p>Si nos dejaste tu email, te hemos enviado una confirmación.</p>
+    {% else %}
+      <p class="entradilla">Hemos guardado tus datos. Ahora mismo no tenemos un profesional verificado en tu zona para este servicio.</p>
+      <p>En cuanto lo tengamos te avisaremos y, solo si nos lo confirmas, le pasaremos tu solicitud. Gracias por la paciencia.</p>
+    {% endif %}
+    <p><a class="boton boton--sec" href="/guias/">Mientras tanto, lee nuestras guías</a></p>
+  </div>
+
+{% elseif paso == 'paso1' %}
+  <header class="cabecera-pagina">
+    <h1>Pide presupuesto</h1>
+    <p class="entradilla">Dinos qué necesitas y dónde. En el siguiente paso verás si tenemos profesional verificado en tu zona.</p>
+  </header>
+  <div class="tarjeta">
+  <form class="form-paso1" action="/presupuesto/" method="get">
+    {% for campo, valor in meta.utm %}<input type="hidden" name="{{ campo }}" value="{{ valor }}">{% endfor %}
+    <input type="hidden" name="origen" value="{{ meta.pagina_origen }}">
+    <input type="hidden" name="ref" value="{{ meta.referrer }}">
+    <div class="campos">
+      <label class="campo{{ errores.servicio is defined ? ' campo--error' }}">
+        <span>¿Qué necesitas?</span>
+        <select name="servicio" required>
+          <option value="">Elige una opción</option>
+          {% for slug, s in servicios %}{% if slug != 'comunidades' %}<option value="{{ slug }}"{{ slug == datos.servicio ? ' selected' }}>{{ s.formulario }}</option>{% endif %}{% endfor %}
+        </select>
+        {% if errores.servicio is defined %}<em class="error">{{ errores.servicio }}</em>{% endif %}
+      </label>
+      <label class="campo{{ errores.tipo_cliente is defined ? ' campo--error' }}">
+        <span>Para</span>
+        <select name="tipo">{% for clave, nombre in tipos_cliente %}<option value="{{ clave }}"{{ clave == datos.tipo_cliente ? ' selected' }}>{{ nombre }}</option>{% endfor %}</select>
+      </label>
+      <label class="campo campo--cp{{ errores.cp is defined ? ' campo--error' }}">
+        <span>Código postal</span>
+        <input name="cp" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" autocomplete="postal-code" required value="{{ datos.cp }}">
+        {% if errores.cp is defined %}<em class="error">{{ errores.cp }}</em>{% endif %}
+      </label>
+    </div>
+    <button class="boton boton--ancho" type="submit">Continuar</button>
+  </form>
+  </div>
+
+{% else %}
+  <header class="cabecera-pagina">
+    <h1>{{ servicios[datos.servicio].formulario }} en {{ provincia_nombre }}</h1>
+    {% if modo == 'activo' %}
+      <p class="aviso aviso--ok">Tenemos un profesional verificado en tu zona{% if profesional %}: <b>{{ profesional.nombre_comercial }}</b>{% endif %}. Déjanos tus datos y te llamará con el presupuesto.</p>
+    {% else %}
+      <p class="aviso aviso--espera">Todavía no tenemos un profesional verificado en tu zona para este servicio. Si quieres, déjanos tus datos y te avisaremos en cuanto lo tengamos. No se los pasaremos a nadie sin preguntarte antes.</p>
+    {% endif %}
+  </header>
+  {% if errores.general is defined %}<p class="aviso aviso--error" role="alert">{{ errores.general }}</p>{% endif %}
+  <div class="tarjeta">
+  <form class="form-paso2" action="/presupuesto/" method="post" novalidate>
+    <input type="hidden" name="servicio" value="{{ datos.servicio }}">
+    <input type="hidden" name="tipo" value="{{ datos.tipo_cliente }}">
+    <input type="hidden" name="cp" value="{{ datos.cp }}">
+    <input type="hidden" name="token" value="{{ token }}">
+    <input type="hidden" name="consentimiento_version" value="{{ consentimiento_version }}">
+    <input type="hidden" name="origen" value="{{ meta.pagina_origen }}">
+    <input type="hidden" name="ref" value="{{ meta.referrer }}">
+    {% for campo, valor in meta.utm %}<input type="hidden" name="{{ campo }}" value="{{ valor }}">{% endfor %}
+    <div class="trampa" aria-hidden="true"><label>No rellenes este campo <input name="web" tabindex="-1" autocomplete="off"></label></div>
+
+    <p class="resumen-paso1">{{ tipos_cliente[datos.tipo_cliente] }} · CP {{ datos.cp }} · <a href="/presupuesto/?cambiar=1&amp;servicio={{ datos.servicio|url_encode }}&amp;tipo={{ datos.tipo_cliente|url_encode }}&amp;origen={{ meta.pagina_origen|url_encode }}">cambiar</a></p>
+
+    <div class="campos campos--2">
+      <label class="campo{{ errores.nombre is defined ? ' campo--error' }}"><span>Nombre</span>
+        <input name="nombre" autocomplete="name" required maxlength="80" value="{{ datos.nombre ?? '' }}">
+        {% if errores.nombre is defined %}<em class="error">{{ errores.nombre }}</em>{% endif %}
+      </label>
+      <label class="campo{{ errores.telefono is defined ? ' campo--error' }}"><span>Teléfono</span>
+        <input name="telefono" type="tel" autocomplete="tel" required maxlength="20" value="{{ datos.telefono ?? '' }}">
+        {% if errores.telefono is defined %}<em class="error">{{ errores.telefono }}</em>{% endif %}
+      </label>
+      <label class="campo{{ errores.email is defined ? ' campo--error' }}"><span>Email <small>(opcional)</small></span>
+        <input name="email" type="email" autocomplete="email" maxlength="120" value="{{ datos.email ?? '' }}">
+        {% if errores.email is defined %}<em class="error">{{ errores.email }}</em>{% endif %}
+      </label>
+      <label class="campo"><span>Municipio <small>(opcional)</small></span>
+        <input name="municipio" autocomplete="address-level2" maxlength="80" value="{{ datos.municipio ?? '' }}">
+      </label>
+      {% if servicios[datos.servicio].modalidades %}
+      <label class="campo"><span>¿Compra o alquiler?</span>
+        <select name="modalidad">
+          <option value="">Me da igual / no lo sé</option>
+          {% for m in servicios[datos.servicio].modalidades %}<option value="{{ m }}"{{ m == (datos.modalidad ?? '') ? ' selected' }}>{{ modalidades[m] }}</option>{% endfor %}
+        </select>
+      </label>
+      {% endif %}
+      {% if servicios[datos.servicio].personas and datos.tipo_cliente == 'particular' %}
+      <label class="campo{{ errores.personas is defined ? ' campo--error' }}"><span>Personas en casa <small>(opcional)</small></span>
+        <input name="personas" type="number" min="1" max="50" inputmode="numeric" value="{{ datos.personas ?? '' }}">
+      </label>
+      {% endif %}
+    </div>
+    <label class="campo"><span>Cuéntanos algo más <small>(opcional)</small></span>
+      <textarea name="mensaje" rows="3" maxlength="1000" placeholder="Por ejemplo: tengo un descalcificador que pierde agua, o busco una fuente para una oficina de 20 personas.">{{ datos.mensaje ?? '' }}</textarea>
+    </label>
+    <label class="consentimiento{{ errores.acepto is defined ? ' campo--error' }}">
+      <input type="checkbox" name="acepto" value="1" required>
+      <span>{{ consentimiento }} <a href="/privacidad/" target="_blank" rel="noopener">Política de privacidad</a>.</span>
+    </label>
+    {% if errores.acepto is defined %}<em class="error">{{ errores.acepto }}</em>{% endif %}
+    <button class="boton boton--ancho" type="submit">{{ modo == 'activo' ? 'Enviar y recibir presupuesto' : 'Avisadme cuando haya profesional' }}</button>
+    <p class="form-paso1__nota">Te llamaremos solo para esta solicitud. Sin publicidad.</p>
+  </form>
+  </div>
+{% endif %}
+</div>
+{% endblock %}

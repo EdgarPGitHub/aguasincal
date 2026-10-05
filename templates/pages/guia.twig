@@ -1,0 +1,24 @@
+{% extends 'base.twig' %}
+{% block contenido %}
+<div class="contenedor columnas">
+  <article class="columnas__principal">
+    <header class="cabecera-pagina">
+      <h1>{{ pagina.titulo }}</h1>
+      {% if pagina.entradilla ?? '' %}<p class="entradilla">{{ pagina.entradilla }}</p>{% endif %}
+      {% include 'components/revision.twig' %}
+    </header>
+    <div class="prosa">{{ contenido_html|raw }}</div>
+    <div class="tarjeta cta-final">
+      {% include 'components/formulario.twig' with {servicio: servicio_form, origen: pagina.ruta, titulo: pagina.cta ?? '¿Quieres que lo vea un profesional?', texto: 'Pide presupuesto gratis. Te atiende un profesional verificado de tu zona.'} only %}
+    </div>
+  </article>
+  <aside class="columnas__lateral">
+    {% if relacionadas ?? [] %}
+    <nav class="tarjeta" aria-labelledby="rel-titulo">
+      <h2 id="rel-titulo" class="lateral__titulo">Te puede interesar</h2>
+      <ul class="lista-enlaces">{% for g in relacionadas %}<li><a href="{{ g.ruta }}">{{ g.titulo }}</a></li>{% endfor %}</ul>
+    </nav>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

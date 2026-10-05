@@ -1,0 +1,71 @@
+{% extends 'base.twig' %}
+{% block contenido %}
+<div class="contenedor columnas">
+  <article class="columnas__principal">
+    <header class="cabecera-pagina">
+      <h1>{{ pagina.titulo }}</h1>
+      <p class="entradilla">{{ pagina.entradilla }}</p>
+    </header>
+
+    <section class="bloque datos-agua">
+      <div class="rejilla rejilla--2">
+        {% include 'components/medidor.twig' with {fh: m.dureza_fh} only %}
+        <div class="recomendacion">
+          <h2>¿Qué te recomendamos?</h2>
+          <p>{{ m.recomendacion.resumen }}</p>
+          <ul class="chips">
+            <li class="chip chip--{{ m.recomendacion.descalcificador }}">Descalcificador: {{ textos_reco[m.recomendacion.descalcificador] }}</li>
+            <li class="chip chip--{{ m.recomendacion.osmosis }}">Ósmosis para beber: {{ textos_reco[m.recomendacion.osmosis] }}</li>
+          </ul>
+        </div>
+      </div>
+      <p class="nota">Fuente: SINAC, Ministerio de Sanidad. Última muestra publicada: {{ m.fecha|fecha }}. 1 °fH = 10 mg/L de carbonato cálcico. <a href="/metodologia-datos/">Cómo calculamos esto</a>.</p>
+    </section>
+
+    {% if m.zonas|length > 1 %}
+    <section class="bloque">
+      <h2>Zonas de abastecimiento de {{ m.nombre }}</h2>
+      <p>El agua de {{ m.nombre }} llega por {{ m.zonas|length }} redes distintas, así que la dureza cambia según el barrio.</p>
+      <div class="tabla-scroll"><table>
+        <thead><tr><th scope="col">Zona de abastecimiento</th><th scope="col">Dureza (°fH)</th><th scope="col">Muestra</th></tr></thead>
+        <tbody>{% for z in m.zonas %}<tr><th scope="row">{{ z.nombre }}</th><td>{{ z.dureza_fh|num(1) }}</td><td>{{ z.fecha|fecha(true) }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </section>
+    {% endif %}
+
+    {% if m.parametros %}
+    <section class="bloque">
+      <h2>Otros parámetros del agua</h2>
+      <div class="tabla-scroll"><table>
+        <thead><tr><th scope="col">Parámetro</th><th scope="col">Valor</th><th scope="col">Límite legal</th></tr></thead>
+        <tbody>{% for p in m.parametros %}<tr><th scope="row">{{ p.nombre }}</th><td>{{ p.valor|num(p.valor < 100 ? 1 : 0) }} {{ p.unidad }}</td><td>{{ p.limite ?? '–' }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </section>
+    {% endif %}
+
+    <section class="bloque" id="calculadora">
+      <h2>¿Qué descalcificador necesitas en {{ m.nombre }}?</h2>
+      {% include 'components/calculadora.twig' with {fh: m.dureza_fh, dimensionados: m.dimensionados} only %}
+    </section>
+
+    {% if m.servicio_ciudad %}
+    <p class="aviso aviso--ok">Atendemos {{ m.nombre }}: <a href="{{ m.servicio_ciudad.ruta }}">{{ m.servicio_ciudad.titulo }}</a>.</p>
+    {% endif %}
+
+    <div class="prosa">{{ contenido_html|raw }}</div>
+
+    {% if cercanos %}
+    <section class="bloque">
+      <h2>Municipios cercanos</h2>
+      <ul class="lista-columnas">{% for c in cercanos %}<li><a href="{{ c.ruta }}">{{ c.nombre }}</a> <small>{{ c.dureza_fh|num }} °fH</small></li>{% endfor %}</ul>
+      <p><a href="{{ ruta_provincia }}">Ver todos los municipios de {{ provincia_nombre }}</a></p>
+    </section>
+    {% endif %}
+  </article>
+  <aside class="columnas__lateral">
+    <div class="tarjeta pegajosa">
+      {% include 'components/formulario.twig' with {servicio: 'descalcificadores', origen: pagina.ruta, titulo: 'Presupuesto en ' ~ m.nombre, texto: 'Descalcificador, ósmosis o filtros. Gratis y sin compromiso.'} only %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

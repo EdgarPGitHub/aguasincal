@@ -1,0 +1,5 @@
+{#- Firma de revisión y fecha. Parámetro: pagina -#}
+<p class="revision">
+  {% if pagina.revisado_por ?? '' %}Revisado por <b>{{ pagina.revisado_por }}</b>{% if pagina.revisor_cargo ?? '' %}, {{ pagina.revisor_cargo }}{% endif %}. {% endif %}
+  {% if pagina.actualizado ?? '' %}Actualizado el <time datetime="{{ pagina.actualizado }}">{{ pagina.actualizado|fecha }}</time>.{% endif %}
+</p>

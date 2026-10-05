@@ -1,0 +1,13 @@
+ine;zona;parametro;valor;unidad;fecha;fuente
+08901;Zona Nord;dureza;42.5;°fH;2026-06-12;fixture
+08901;Zona Sud;dureza;36.1;°fH;2026-05-30;fixture
+08901;Zona Nord;nitratos;12.3;mg/L;2026-06-12;fixture
+08901;Zona Nord;conductividad;980;µS/cm;2026-06-12;fixture
+08902;Xarxa única;dureza;28.4;°fH;2026-04-02;fixture
+08903;Xarxa Ciutat;dureza;47.9;°fH;2026-07-20;fixture
+08903;Xarxa Ciutat;sodio;85;mg/L;2026-07-20;fixture
+08904;Xarxa Poble;dureza;12.0;°fH;2026-03-01;fixture
+08905;Xarxa Riera;dureza;33.0;°fH;2023-01-15;fixture
+08906;Xarxa Mont;dureza;19.7;°fH;2026-02-11;fixture
+08019;Xarxa A;dureza;38.0;°fH;2026-08-01;fixture
+08019;Xarxa B;dureza;30.2;°fH;2026-08-03;fixture

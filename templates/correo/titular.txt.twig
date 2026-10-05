@@ -1,0 +1,30 @@
+{% autoescape false %}
+NUEVO LEAD #{{ lead.id }} · {{ lead.modo == 'activo' ? 'ZONA ACTIVA' : 'LISTA DE ESPERA' }}
+
+Servicio:   {{ servicios[lead.servicio].formulario ?? lead.servicio }}{% if lead.modalidad %} ({{ modalidades[lead.modalidad] ?? lead.modalidad }}){% endif %}
+
+Cliente:    {{ tipos_cliente[lead.tipo_cliente] ?? lead.tipo_cliente }}
+Nombre:     {{ lead.nombre }}
+Teléfono:   {{ lead.telefono }}
+Email:      {{ lead.email ?: '-' }}
+Zona:       {{ lead.municipio ?: '-' }} · CP {{ lead.cp }} · {{ provincias[lead.provincia].nombre ?? lead.provincia }}
+{% if lead.personas %}Personas:   {{ lead.personas }}
+{% endif %}
+Mensaje:    {{ lead.mensaje ?: '-' }}
+
+Página:     {{ lead.pagina_origen ?: '-' }}
+{% if lead.notas %}Nota:       {{ lead.notas }}
+{% endif %}
+{% if lead.modo == 'activo' %}
+Profesional asignado: {{ lead.profesional_nombre ?? '-' }}
+
+ACCIONES (cada enlace pide confirmación):
+- Enviar al profesional por email: {{ enlaces.enviar_email }}
+- Enviar por WhatsApp:             {{ enlaces.enviar_whatsapp }}
+{% else %}
+Lead en LISTA DE ESPERA: no hay profesional activo para esta provincia y servicio.
+No lo cedas sin volver a hablar con la persona.
+{% endif %}
+- Marcar como inválido:            {{ enlaces.invalido }}
+- Ver en el panel:                 {{ enlaces.panel }}
+{% endautoescape %}

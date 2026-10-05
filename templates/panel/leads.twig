@@ -1,0 +1,50 @@
+{% extends 'panel/layout.twig' %}
+{% block titulo %}Leads{% endblock %}
+{% block contenido %}
+<h1>Leads</h1>
+<ul class="resumen-estados" aria-label="Este mes">
+  <li><b>{{ resumen.nuevo }}</b> nuevos</li>
+  <li><b>{{ resumen.enviado }}</b> enviados</li>
+  <li><b>{{ resumen.valido }}</b> válidos</li>
+  <li><b>{{ resumen.invalido }}</b> inválidos</li>
+  <li><b>{{ resumen.espera }}</b> en espera</li>
+  <li class="resumen-estados__mes">{{ mes }}</li>
+</ul>
+
+<form class="filtros" method="get" action="{{ base }}">
+  <select name="estado" aria-label="Estado"><option value="">Todos los estados</option>{% for k, v in estados %}<option value="{{ k }}"{{ filtros.estado == k ? ' selected' }}>{{ v }}</option>{% endfor %}</select>
+  <select name="provincia" aria-label="Provincia"><option value="">Todas las provincias</option>{% for k, p in provincias %}<option value="{{ k }}"{{ filtros.provincia == k ? ' selected' }}>{{ p.nombre }}</option>{% endfor %}</select>
+  <select name="servicio" aria-label="Servicio"><option value="">Todos los servicios</option>{% for k, s in servicios %}<option value="{{ k }}"{{ filtros.servicio == k ? ' selected' }}>{{ s.nombre }}</option>{% endfor %}</select>
+  <input type="month" name="mes" value="{{ filtros.mes }}" aria-label="Mes">
+  <input type="search" name="q" value="{{ filtros.q }}" placeholder="Nombre, teléfono, CP…" aria-label="Buscar">
+  <button class="boton boton--peque" type="submit">Filtrar</button>
+  <a class="boton boton--peque boton--sec" href="{{ base }}?r=exportar&amp;mes={{ filtros.mes ?: mes }}">Exportar CSV del mes</a>
+</form>
+
+<p class="nota">{{ total }} leads</p>
+<div class="tabla-scroll">
+<table class="tabla-panel">
+  <thead><tr><th>#</th><th>Fecha</th><th>Servicio</th><th>Zona</th><th>Cliente</th><th>Estado</th><th>Profesional</th></tr></thead>
+  <tbody>
+  {% for l in leads %}
+    <tr>
+      <td><a href="{{ base }}?r=lead&amp;id={{ l.id }}">#{{ l.id }}</a></td>
+      <td>{{ l.creado|date('d/m/Y H:i', 'Europe/Madrid') }}</td>
+      <td>{{ servicios[l.servicio].nombre ?? l.servicio }}{% if l.modalidad %} <small>({{ l.modalidad }})</small>{% endif %}</td>
+      <td>{{ l.municipio ?: l.cp }} <small>{{ provincias[l.provincia].nombre ?? l.provincia }}</small></td>
+      <td>{{ l.nombre }} <small>{{ l.telefono }}</small>{% if l.origen != 'web' %} <span class="etiqueta">{{ l.origen }}</span>{% endif %}</td>
+      <td><span class="estado estado--{{ l.estado }}">{{ estados[l.estado] }}</span></td>
+      <td>{{ l.profesional_nombre ?? '–' }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7">No hay leads con estos filtros.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if paginas > 1 %}
+<nav class="paginacion" aria-label="Páginas">
+  {% for p in 1..paginas %}<a href="{{ base }}?{{ (filtros|merge({p: p}))|url_encode }}"{{ p == pagina_actual ? ' aria-current="page"' }}>{{ p }}</a>{% endfor %}
+</nav>
+{% endif %}
+{% endblock %}

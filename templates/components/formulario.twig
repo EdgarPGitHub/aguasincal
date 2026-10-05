@@ -1,0 +1,34 @@
+{#-
+  Paso 1 del formulario (HTML estático). Envía por GET a /presupuesto/, que muestra el paso 2
+  con el texto legal correcto según el código postal.
+  Parámetros: servicio (preseleccionado o ''), origen (ruta de la página), titulo, texto, cp ('' o fijo)
+-#}
+{%- set servicio_fijo = servicio ?? '' -%}
+<form class="form-paso1" action="/presupuesto/" method="get" data-form-lead>
+  {% if titulo ?? '' %}<h2 class="form-paso1__titulo">{{ titulo }}</h2>{% endif %}
+  {% if texto ?? '' %}<p class="form-paso1__texto">{{ texto }}</p>{% endif %}
+  <input type="hidden" name="origen" value="{{ origen }}">
+  <div class="campos">
+    <label class="campo">
+      <span>¿Qué necesitas?</span>
+      <select name="servicio" required>
+        {% if not servicio_fijo %}<option value="">Elige una opción</option>{% endif %}
+        {% for slug, s in servicios %}{% if slug != 'comunidades' %}
+          <option value="{{ slug }}"{{ slug == servicio_fijo ? ' selected' }}>{{ s.formulario }}</option>
+        {% endif %}{% endfor %}
+      </select>
+    </label>
+    <label class="campo">
+      <span>Para</span>
+      <select name="tipo">
+        {% for clave, nombre in tipos_cliente %}<option value="{{ clave }}">{{ nombre }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="campo campo--cp">
+      <span>Código postal</span>
+      <input name="cp" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" autocomplete="postal-code" required placeholder="Ej.: 08201" value="{{ cp ?? '' }}">
+    </label>
+  </div>
+  <button class="boton boton--ancho" type="submit">Ver disponibilidad y pedir presupuesto</button>
+  <p class="form-paso1__nota">Gratis y sin compromiso. Solo te pediremos tu nombre y teléfono en el siguiente paso.</p>
+</form>

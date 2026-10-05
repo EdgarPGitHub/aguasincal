@@ -1,0 +1,11 @@
+{% autoescape false %}
+Nuevo cliente {{ site.nombre }} (lead #{{ lead.id }})
+{{ servicios[lead.servicio].formulario ?? lead.servicio }}{% if lead.modalidad %} - {{ modalidades[lead.modalidad] ?? lead.modalidad }}{% endif %}
+
+{{ tipos_cliente[lead.tipo_cliente] ?? lead.tipo_cliente }}
+{{ lead.nombre }} - {{ lead.telefono }}
+{{ lead.municipio ?: '' }} CP {{ lead.cp }}
+{% if lead.personas %}{{ lead.personas }} personas
+{% endif %}{% if lead.mensaje %}"{{ lead.mensaje }}"
+{% endif %}Por favor, llámale en menos de 24 h.
+{% endautoescape %}

@@ -1,0 +1,84 @@
+{% extends 'panel/layout.twig' %}
+{% block titulo %}Lead #{{ lead.id }}{% endblock %}
+{% block contenido %}
+<p><a href="{{ base }}">← Volver a leads</a></p>
+<h1>Lead #{{ lead.id }} <span class="estado estado--{{ lead.estado }}">{{ estados[lead.estado] }}</span></h1>
+{% if aviso %}<p class="aviso aviso--ok" role="status">{{ aviso }}</p>{% endif %}
+{% if error %}<p class="aviso aviso--error" role="alert">{{ error }}</p>{% endif %}
+
+<div class="rejilla rejilla--2">
+  <section class="tarjeta">
+    <h2>Cliente</h2>
+    <dl class="ficha">
+      <dt>Nombre</dt><dd>{{ lead.nombre }}</dd>
+      <dt>Teléfono</dt><dd>{% if lead.telefono %}<a href="tel:{{ lead.telefono }}">{{ lead.telefono }}</a>{% else %}–{% endif %}</dd>
+      <dt>Email</dt><dd>{{ lead.email ?: '–' }}</dd>
+      <dt>Tipo</dt><dd>{{ tipos_cliente[lead.tipo_cliente] ?? lead.tipo_cliente }}</dd>
+      <dt>Servicio</dt><dd>{{ servicios[lead.servicio].formulario ?? lead.servicio }}{% if lead.modalidad %} · {{ modalidades[lead.modalidad] ?? lead.modalidad }}{% endif %}</dd>
+      {% if lead.personas %}<dt>Personas</dt><dd>{{ lead.personas }}</dd>{% endif %}
+      <dt>Zona</dt><dd>{{ lead.municipio ?: '–' }} · CP {{ lead.cp }} · {{ provincias[lead.provincia].nombre ?? lead.provincia }}</dd>
+      <dt>Mensaje</dt><dd class="mensaje">{{ lead.mensaje ?: '–' }}</dd>
+    </dl>
+  </section>
+  <section class="tarjeta">
+    <h2>Seguimiento</h2>
+    <dl class="ficha">
+      <dt>Recibido</dt><dd>{{ lead.creado|date('d/m/Y H:i', 'Europe/Madrid') }} · {{ lead.origen }}</dd>
+      <dt>Modo</dt><dd>{{ lead.modo == 'activo' ? 'Zona activa' : 'Lista de espera' }}</dd>
+      <dt>Profesional</dt><dd>{{ lead.profesional_nombre ?? '–' }}</dd>
+      <dt>Enviado</dt><dd>{{ lead.enviado ? lead.enviado|date('d/m/Y H:i', 'Europe/Madrid') : 'No' }}</dd>
+      <dt>Página</dt><dd>{{ lead.pagina_origen ?: '–' }}</dd>
+      <dt>Procedencia</dt><dd>{{ lead.referrer ?: 'Directo / desconocido' }}{% for k, v in utm %} · {{ k }}={{ v }}{% endfor %}</dd>
+      <dt>Consentimiento</dt><dd>{{ lead.consentimiento_version }}</dd>
+      {% if lead.motivo_invalido %}<dt>Motivo inválido</dt><dd>{{ lead.motivo_invalido }}</dd>{% endif %}
+    </dl>
+  </section>
+</div>
+
+{% if lead.anonimizado is null %}
+<div class="rejilla rejilla--2">
+  <section class="tarjeta">
+    <h2>Enviar al profesional</h2>
+    <form method="post">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="accion" value="enviar">
+      <label class="campo"><span>Profesional</span>
+        <select name="profesional_id">{% for p in profesionales %}<option value="{{ p.id }}"{{ p.id == lead.profesional_id ? ' selected' }}>{{ p.nombre_comercial }}</option>{% endfor %}</select>
+      </label>
+      {% if lead.modo == 'espera' %}
+      <label class="consentimiento"><input type="checkbox" name="reconfirmado" value="1"> <span>He hablado con esta persona y acepta que pasemos sus datos al profesional.</span></label>
+      {% endif %}
+      <button class="boton" type="submit">Enviar por email</button>
+      {% if whatsapp_url %}<a class="boton boton--sec" href="{{ whatsapp_url }}" rel="noopener">Abrir WhatsApp</a>{% endif %}
+    </form>
+    {% if whatsapp_url %}<p class="nota">Si lo envías por WhatsApp, marca después el estado como «Enviado».</p>{% endif %}
+  </section>
+  <section class="tarjeta">
+    <h2>Estado</h2>
+    <form method="post" class="form-estado">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="accion" value="estado">
+      <label class="campo"><span>Estado</span>
+        <select name="estado">{% for k, v in estados %}<option value="{{ k }}"{{ k == lead.estado ? ' selected' }}>{{ v }}</option>{% endfor %}</select>
+      </label>
+      <label class="campo"><span>Motivo (si es inválido)</span>
+        <select name="motivo"><option value="">–</option>{% for k, v in motivos %}<option value="{{ k }}"{{ k == lead.motivo_invalido ? ' selected' }}>{{ v }}</option>{% endfor %}</select>
+      </label>
+      <button class="boton boton--sec" type="submit">Guardar estado</button>
+    </form>
+  </section>
+</div>
+<section class="tarjeta">
+  <h2>Notas</h2>
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="accion" value="notas">
+    <textarea name="notas" rows="4" aria-label="Notas">{{ lead.notas }}</textarea>
+    <button class="boton boton--sec" type="submit">Guardar notas</button>
+  </form>
+</section>
+<form method="post" class="borrar" data-confirmar="¿Borrar los datos personales de este lead? No se puede deshacer.">
+  <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="accion" value="anonimizar">
+  <button class="enlace enlace--peligro" type="submit">Borrar datos personales (derecho de supresión)</button>
+</form>
+{% else %}
+<p class="aviso">Datos personales borrados el {{ lead.anonimizado|date('d/m/Y', 'Europe/Madrid') }}.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'panel/layout.twig' %}
+{% block titulo %}Profesionales{% endblock %}
+{% block contenido %}
+<h1>Profesionales</h1>
+<p><a class="boton" href="{{ base }}?r=profesional">+ Nuevo profesional</a></p>
+<div class="tabla-scroll">
+<table class="tabla-panel">
+  <thead><tr><th>Nombre comercial</th><th>Razón social</th><th>Email</th><th>WhatsApp</th><th>€/lead</th><th>Estado</th><th></th></tr></thead>
+  <tbody>
+  {% for p in profesionales %}
+    <tr>
+      <td>{{ p.nombre_comercial }}</td><td>{{ p.razon_social ?: '–' }}</td><td>{{ p.email ?: '–' }}</td><td>{{ p.whatsapp ?: '–' }}</td>
+      <td>{{ p.precio_lead|num(2) }}</td><td>{{ p.activo ? 'Activo' : 'Inactivo' }}</td>
+      <td><a href="{{ base }}?r=profesional&amp;id={{ p.id }}">Editar</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7">Todavía no hay profesionales.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'base.twig' %}
+{% block contenido %}
+<div class="contenedor columnas">
+  <article class="columnas__principal">
+    <header class="cabecera-pagina">
+      <h1>{{ pagina.titulo }}</h1>
+      {% if pagina.entradilla ?? '' %}<p class="entradilla">{{ pagina.entradilla }}</p>{% endif %}
+      <p class="aviso aviso--ok">
+        {% if atiende %}Te atiende <b>{{ atiende }}</b>, profesional verificado en {{ provincia_nombre }}.{% else %}Tenemos un profesional verificado que atiende {{ ciudad }} y toda la provincia de {{ provincia_nombre }}.{% endif %}
+      </p>
+      {% include 'components/revision.twig' %}
+    </header>
+
+    {% if agua %}
+    <section class="bloque datos-agua">
+      <h2>El agua en {{ ciudad }}</h2>
+      <div class="rejilla rejilla--2">
+        {% include 'components/medidor.twig' with {fh: agua.dureza_fh} only %}
+        <div>
+          <p>{{ agua.recomendacion.resumen }}</p>
+          <p class="nota">Dato oficial del SINAC (Ministerio de Sanidad){% if agua.fecha %}, muestra de {{ agua.fecha|fecha(true) }}{% endif %}.{% if agua.zonas > 1 %} {{ ciudad }} tiene {{ agua.zonas }} zonas de abastecimiento; mostramos la media.{% endif %} <a href="{{ agua.ruta }}">Ver el detalle del agua de {{ ciudad }}</a>.</p>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    <div class="prosa">{{ contenido_html|raw }}</div>
+    {% include 'components/precios.twig' with {filas: precios, actualizado: precios_actualizado} only %}
+
+    {% if otras_ciudades ?? [] %}
+    <section class="bloque">
+      <h2>También atendemos cerca de {{ ciudad }}</h2>
+      <ul class="lista-columnas">{% for c in otras_ciudades %}<li><a href="{{ c.ruta }}">{{ c.ciudad }}</a></li>{% endfor %}</ul>
+    </section>
+    {% endif %}
+  </article>
+  <aside class="columnas__lateral">
+    <div class="tarjeta pegajosa">
+      {% include 'components/formulario.twig' with {servicio: servicio_form, origen: pagina.ruta, titulo: 'Presupuesto en ' ~ ciudad, texto: 'Gratis y sin compromiso.'} only %}
+      {% if site.telefono_enlace %}<p class="llamar">¿Prefieres llamar? <a href="tel:+{{ site.telefono_enlace }}" data-evento="llamar">{{ site.telefono_visible }}</a></p>{% endif %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

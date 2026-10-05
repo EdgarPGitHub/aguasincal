@@ -1,0 +1,20 @@
+{#- Tabla de precios reales del profesional. Parámetros: filas, actualizado -#}
+{% if filas ?? [] %}
+<section class="precios" aria-labelledby="precios-titulo">
+  <h2 id="precios-titulo">Precios orientativos</h2>
+  <div class="tabla-scroll">
+  <table>
+    <thead><tr><th scope="col">Concepto</th><th scope="col">Precio</th></tr></thead>
+    <tbody>
+    {% for f in filas %}
+      <tr>
+        <th scope="row">{{ f.concepto }}{% if f.nota ?? '' %}<small>{{ f.nota }}</small>{% endif %}</th>
+        <td>{% if f.hasta ?? 0 %}{{ f.desde|num }}–{{ f.hasta|num }}{% else %}desde {{ f.desde|num }}{% endif %} {{ f.unidad ?? '€' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="nota">Precios con IVA e instalación estándar{% if actualizado ?? '' %}, actualizados en {{ actualizado|fecha(true) }}{% endif %}. El presupuesto final depende de tu instalación.</p>
+</section>
+{% endif %}

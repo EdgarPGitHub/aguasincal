@@ -1,0 +1,37 @@
+{
+    "name": "aguasincal/web",
+    "description": "AguaSinCal.es: web de captación de presupuestos de tratamiento de agua",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.2",
+        "ext-mbstring": "*",
+        "ext-pdo": "*",
+        "bacon/bacon-qr-code": "^3.1",
+        "phpmailer/phpmailer": "^7.1",
+        "robthree/twofactorauth": "^3.0",
+        "twig/twig": "^3.30"
+    },
+    "autoload": {
+        "psr-4": {
+            "AguaSinCal\\": "app/src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AguaSinCal\\Build\\": "build/src/",
+            "AguaSinCal\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "platform": {
+            "php": "8.2.0"
+        }
+    },
+    "require-dev": {
+        "league/commonmark": "^2.10",
+        "phpunit/phpunit": "^11",
+        "symfony/yaml": "^7.4"
+    }
+}

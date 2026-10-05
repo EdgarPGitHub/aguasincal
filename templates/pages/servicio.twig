@@ -1,0 +1,33 @@
+{% extends 'base.twig' %}
+{% block contenido %}
+<div class="contenedor columnas">
+  <article class="columnas__principal">
+    <header class="cabecera-pagina">
+      <h1>{{ pagina.titulo }}</h1>
+      {% if pagina.entradilla ?? '' %}<p class="entradilla">{{ pagina.entradilla }}</p>{% endif %}
+      {% include 'components/revision.twig' %}
+    </header>
+    <div class="prosa">{{ contenido_html|raw }}</div>
+    {% include 'components/precios.twig' with {filas: precios, actualizado: precios_actualizado} only %}
+
+    {% if ciudades ?? [] %}
+    <section class="bloque">
+      <h2>{{ pagina.nombre_servicio ?? pagina.titulo }} por ciudad</h2>
+      <ul class="lista-columnas">{% for c in ciudades %}<li><a href="{{ c.ruta }}">{{ c.ciudad }}</a></li>{% endfor %}</ul>
+    </section>
+    {% endif %}
+
+    {% if guias ?? [] %}
+    <section class="bloque">
+      <h2>Guías relacionadas</h2>
+      <ul class="lista-enlaces">{% for g in guias %}<li><a href="{{ g.ruta }}">{{ g.titulo }}</a></li>{% endfor %}</ul>
+    </section>
+    {% endif %}
+  </article>
+  <aside class="columnas__lateral">
+    <div class="tarjeta pegajosa">
+      {% include 'components/formulario.twig' with {servicio: servicio_form, origen: pagina.ruta, titulo: 'Pide presupuesto', texto: 'Compra o alquiler. Profesionales verificados en Cataluña y Málaga.'} only %}
+    </div>
+  </aside>
+</div>
+{% endblock %}
