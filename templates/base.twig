@@ -7,9 +7,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ pagina.seo_title ?? (pagina.titulo ~ ' | ' ~ site.nombre) }}</title>
 {% if pagina.descripcion ?? '' %}<meta name="description" content="{{ pagina.descripcion }}">{% endif %}
-{% if pagina.indexable ?? false %}
-<link rel="canonical" href="{{ url_abs(pagina.ruta) }}">
-{% else %}
+{% if pagina.indexable ?? false %}<link rel="canonical" href="{{ url_abs(pagina.ruta) }}">{% endif %}
+{% if noindex_global ?? false %}
+<meta name="robots" content="noindex, nofollow">
+{% elseif not (pagina.indexable ?? false) %}
 <meta name="robots" content="noindex, follow">
 {% endif %}
 <meta property="og:type" content="{{ pagina.og_type ?? 'website' }}">
@@ -66,7 +67,8 @@
     <div>
       <a class="logo logo--pie" href="/">{% include 'components/logo.twig' %}</a>
       <p>Te ponemos en contacto con profesionales verificados de tratamiento de agua. Gratis y sin compromiso.</p>
-      {% if site.telefono_visible %}<p><a href="tel:+{{ site.telefono_enlace }}" data-evento="llamar">{{ site.telefono_visible }}</a></p>{% endif %}
+      {% if cubierta and site.telefono_enlace %}<p><a href="tel:+{{ site.telefono_enlace }}" data-evento="llamar">{{ site.telefono_visible }}</a></p>{% endif %}
+      {% if site.email_publico %}<p><a href="mailto:{{ site.email_publico }}">{{ site.email_publico }}</a></p>{% endif %}
     </div>
     <nav aria-label="Servicios">
       <h2>Servicios</h2>

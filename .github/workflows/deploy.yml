@@ -1,16 +1,20 @@
-# Despliegue a Raiola (hosting compartido) al fusionar en main, o a mano desde la pestaña Actions.
+# Despliegue a Raiola (hosting compartido) al fusionar en main, o a mano desde Actions → Despliegue → Run workflow.
+#
+# No hace nada hasta que exista la variable DESPLIEGUE_ACTIVO=si (así, fusionar antes de tener los secretos no da errores).
 #
 # En el servidor:
-#   ~/public_html/      ← web generada (dist/)            (rsync --delete, respeta .well-known, cgi-bin y .user.ini)
+#   ~/public_html/      ← web generada (dist/)            (rsync --delete; respeta .well-known, cgi-bin, .user.ini…)
 #   ~/aguasincal-app/   ← código PHP + vendor + plantillas (rsync --delete)
-#   ~/aguasincal-data/  ← base de datos, config.local.php, logs y copias (el despliegue nunca borra nada aquí)
+#   ~/aguasincal-data/  ← base de datos, app.key, config.local.php, logs y copias (el despliegue nunca borra nada aquí)
 #
-# Secretos necesarios (Settings → Secrets and variables → Actions → Secrets): ver docs/PASOS.md
-#   SSH_HOST, SSH_USER, SSH_KEY, APP_KEY, PANEL_RUTA, LEADS_EMAIL, SMTP_PASS, ADMIN_EMAIL, ADMIN_CLAVE, WEB_CLAVE
-#   (opcionales) SSH_PORT, SMTP_HOST, SMTP_USUARIO
+# Secretos (Settings → Secrets and variables → Actions → Secrets): ver docs/PASOS.md
+#   SSH_HOST, SSH_USER, SSH_KEY, SMTP_PASS, PANEL_RUTA, ADMIN_EMAIL, ADMIN_CLAVE
+#   opcionales: SSH_PORT (22), LEADS_EMAIL (info@dominio), SMTP_USUARIO (info@dominio), SMTP_HOST (mail.dominio)
 # Variables (Settings → Secrets and variables → Actions → Variables):
-#   PROTEGIDO=si|no (por defecto "si": web con contraseña y noindex hasta el lanzamiento)
-#   DOMINIO (aguasincal.es), CARPETA_PUBLICA (public_html), PHP_BIN (php), RSYNC_EXCLUIR (carpetas extra a respetar, separadas por espacios)
+#   DESPLIEGUE_ACTIVO=si   activa el despliegue
+#   INDEXAR=no|si          "no" (por defecto) = web visible pero con noindex; "si" = lanzamiento
+#   TELEFONO, WHATSAPP     p. ej. "600 12 34 56"; vacías = sin botones de llamar/WhatsApp
+#   DOMINIO (aguasincal.es), CARPETA_PUBLICA (public_html), PHP_BIN (php), RSYNC_EXCLUIR (carpetas a respetar, separadas por espacios)
 name: Despliegue
 
 on:
@@ -27,6 +31,7 @@ permissions:
 
 jobs:
   desplegar:
+    if: vars.DESPLIEGUE_ACTIVO == 'si'
     runs-on: ubuntu-latest
     env:
       SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -36,9 +41,10 @@ jobs:
       DOMINIO: ${{ vars.DOMINIO || 'aguasincal.es' }}
       CARPETA_PUBLICA: ${{ vars.CARPETA_PUBLICA || 'public_html' }}
       PHP_BIN: ${{ vars.PHP_BIN || 'php' }}
-      PROTEGIDO: ${{ vars.PROTEGIDO || 'si' }}
+      INDEXAR: ${{ vars.INDEXAR || 'no' }}
+      TELEFONO: ${{ vars.TELEFONO || '' }}
+      WHATSAPP: ${{ vars.WHATSAPP || '' }}
       RSYNC_EXCLUIR: ${{ vars.RSYNC_EXCLUIR || '' }}
-      WEB_USUARIO: aguasincal
     steps:
       - uses: actions/checkout@v4
 
@@ -51,25 +57,27 @@ jobs:
       - name: Comprobar que están todos los secretos
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
-          APP_KEY: ${{ secrets.APP_KEY }}
-          LEADS_EMAIL: ${{ secrets.LEADS_EMAIL }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           ADMIN_CLAVE: ${{ secrets.ADMIN_CLAVE }}
-          WEB_CLAVE: ${{ secrets.WEB_CLAVE }}
         run: |
           faltan=""
-          for s in SSH_HOST SSH_USER SSH_KEY APP_KEY PANEL_RUTA LEADS_EMAIL SMTP_PASS ADMIN_EMAIL ADMIN_CLAVE; do
+          for s in SSH_HOST SSH_USER SSH_KEY SMTP_PASS PANEL_RUTA ADMIN_EMAIL ADMIN_CLAVE; do
             [ -n "${!s}" ] || faltan="$faltan $s"
           done
-          if [ "$PROTEGIDO" = "si" ] && [ -z "$WEB_CLAVE" ]; then faltan="$faltan WEB_CLAVE"; fi
           if [ -n "$faltan" ]; then echo "::error::Faltan secretos:$faltan (ver docs/PASOS.md)"; exit 1; fi
-          [ ${#APP_KEY} -ge 32 ] || { echo "::error::APP_KEY debe tener al menos 32 caracteres"; exit 1; }
+          [[ "$PANEL_RUTA" =~ ^[a-z0-9][a-z0-9-]{2,40}$ ]] || { echo "::error::PANEL_RUTA solo puede tener minúsculas, números y guiones"; exit 1; }
 
       - name: Instalar dependencias y pasar los tests
         run: |
           composer install --no-interaction --no-progress --prefer-dist
           vendor/bin/phpunit
+
+      - name: Generar la web
+        run: |
+          ARGS="--salida=dist --app=../aguasincal-app --panel=$PANEL_RUTA"
+          if [ "$INDEXAR" != "si" ]; then ARGS="$ARGS --noindex"; fi
+          php build/build.php $ARGS
 
       - name: Preparar SSH
         env:
@@ -81,17 +89,11 @@ jobs:
           echo "SSH=ssh -i $HOME/.ssh/id_despliegue -p $SSH_PORT -o BatchMode=yes" >> "$GITHUB_ENV"
           echo "REMOTO=$SSH_USER@$SSH_HOST" >> "$GITHUB_ENV"
 
-      - name: Comprobar conexión y carpeta personal del servidor
+      - name: Preparar carpetas y clave de la aplicación en el servidor
         run: |
-          HOME_REMOTO=$($SSH "$REMOTO" 'echo $HOME')
-          echo "HOME_REMOTO=$HOME_REMOTO" >> "$GITHUB_ENV"
-          $SSH "$REMOTO" "mkdir -p ~/aguasincal-app ~/aguasincal-data/logs ~/aguasincal-data/backups && chmod 700 ~/aguasincal-data && $PHP_BIN -v | head -1"
-
-      - name: Generar la web
-        run: |
-          ARGS="--salida=dist --app=../aguasincal-app --panel=$PANEL_RUTA"
-          if [ "$PROTEGIDO" = "si" ]; then ARGS="$ARGS --protegido --htpasswd=$HOME_REMOTO/aguasincal-data/.htpasswd"; fi
-          php build/build.php $ARGS
+          $SSH "$REMOTO" 'mkdir -p ~/aguasincal-app ~/aguasincal-data/logs ~/aguasincal-data/backups && chmod 700 ~/aguasincal-data
+            if [ ! -s ~/aguasincal-data/app.key ]; then (umask 077; head -c 48 /dev/urandom | base64 | tr -d "\n" > ~/aguasincal-data/app.key); echo "app.key creada"; fi'
+          $SSH "$REMOTO" "$PHP_BIN -v | head -1"
 
       - name: Conservar el bloque de PHP de cPanel en .htaccess
         run: |
@@ -107,25 +109,23 @@ jobs:
           cp -r app config migrations templates scripts composer.json composer.lock paquete/
           composer install --working-dir=paquete --no-dev --optimize-autoloader --no-interaction --no-progress --prefer-dist
 
-      - name: Escribir config.local.php y .htpasswd
+      - name: Escribir config.local.php
         env:
-          APP_KEY: ${{ secrets.APP_KEY }}
           LEADS_EMAIL: ${{ secrets.LEADS_EMAIL }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_USUARIO: ${{ secrets.SMTP_USUARIO }}
-          WEB_CLAVE: ${{ secrets.WEB_CLAVE }}
         run: |
           umask 077
           php -r '
             $d = getenv("DOMINIO");
-            $usuario = getenv("SMTP_USUARIO") ?: "avisos@" . $d;
+            $usuario = getenv("SMTP_USUARIO") ?: "info@" . $d;
             $c = [
               "entorno" => "produccion",
-              "app_key" => getenv("APP_KEY"),
               "url" => "https://" . $d,
-              "leads_email" => getenv("LEADS_EMAIL"),
+              "leads_email" => getenv("LEADS_EMAIL") ?: "info@" . $d,
               "panel_ruta" => getenv("PANEL_RUTA"),
+              "contacto" => ["telefono" => (string) getenv("TELEFONO"), "whatsapp" => (string) getenv("WHATSAPP")],
               "correo" => [
                 "transporte" => "smtp",
                 "host" => getenv("SMTP_HOST") ?: "mail." . $d,
@@ -140,9 +140,6 @@ jobs:
             file_put_contents("config.local.php", "<?php\n// Generado por el despliegue. No editar: se sobrescribe.\nreturn " . var_export($c, true) . ";\n");
           '
           $SSH "$REMOTO" 'umask 077; cat > ~/aguasincal-data/config.local.php' < config.local.php
-          if [ "$PROTEGIDO" = "si" ]; then
-            printf '%s:%s\n' "$WEB_USUARIO" "$(openssl passwd -apr1 "$WEB_CLAVE")" | $SSH "$REMOTO" 'umask 077; cat > ~/aguasincal-data/.htpasswd; chmod 644 ~/aguasincal-data/.htpasswd'
-          fi
           rm -f config.local.php
 
       - name: Subir aplicación y web
@@ -162,17 +159,9 @@ jobs:
           printf '%s' "$ADMIN_CLAVE" | $SSH "$REMOTO" "ADMIN_CLAVE=\$(cat) $PHP_BIN ~/aguasincal-app/scripts/admin.php crear-usuario '$ADMIN_EMAIL'"
 
       - name: Comprobaciones tras el despliegue
-        env:
-          WEB_CLAVE: ${{ secrets.WEB_CLAVE }}
         run: |
-          AUTH=""
-          if [ "$PROTEGIDO" = "si" ]; then
-            codigo=$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMINIO/")
-            [ "$codigo" = "401" ] || { echo "::error::Con PROTEGIDO=si la web debería pedir contraseña (devuelve $codigo)"; exit 1; }
-            AUTH="-u $WEB_USUARIO:$WEB_CLAVE"
-          fi
           comprobar() {
-            codigo=$(curl -s -o /dev/null -w '%{http_code}' $AUTH "https://$DOMINIO$1")
+            codigo=$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMINIO$1")
             echo "$1 → $codigo (esperado $2)"
             [[ "$codigo" =~ ^($2)$ ]] || { echo "::error::$1 devolvió $codigo"; exit 1; }
           }
@@ -183,4 +172,11 @@ jobs:
           comprobar /_app.php 403
           comprobar /_build.json 403
           comprobar /noexiste-xyz/ 404
-          curl -sI $AUTH "https://$DOMINIO/" | grep -qi 'content-security-policy' || { echo "::error::Faltan las cabeceras de seguridad (.htaccess)"; exit 1; }
+          cabeceras=$(curl -sI "https://$DOMINIO/")
+          echo "$cabeceras" | grep -qi 'content-security-policy' || { echo "::error::Faltan las cabeceras de seguridad (.htaccess)"; exit 1; }
+          if [ "$INDEXAR" != "si" ]; then
+            echo "$cabeceras" | grep -qi 'x-robots-tag: noindex' || { echo "::error::La vista previa debería llevar X-Robots-Tag: noindex"; exit 1; }
+            echo "Vista previa publicada (noindex): https://$DOMINIO/"
+          else
+            echo "Web publicada e indexable: https://$DOMINIO/"
+          fi

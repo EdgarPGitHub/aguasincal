@@ -44,10 +44,49 @@ final class App
         return new self($raiz, $datos, is_array($local) ? $local : []);
     }
 
-    /** Lee config/{nombre}.php del repositorio (cacheado). */
+    /**
+     * Lee config/{nombre}.php del repositorio (cacheado).
+     * En "site", el teléfono y el WhatsApp pueden venir de la configuración local (bloque "contacto"),
+     * que el despliegue rellena con las variables TELEFONO y WHATSAPP de GitHub.
+     */
     public function config(string $nombre): array
     {
-        return $this->configs[$nombre] ??= require $this->raiz . '/config/' . $nombre . '.php';
+        if (!isset($this->configs[$nombre])) {
+            $config = require $this->raiz . '/config/' . $nombre . '.php';
+            if ($nombre === 'site') {
+                $config = self::aplicarContacto($config, (array) $this->local('contacto', []));
+            }
+            $this->configs[$nombre] = $config;
+        }
+        return $this->configs[$nombre];
+    }
+
+    /** Sustituye teléfono y WhatsApp de site.php si vienen en $contacto (vacío = sin cambios). */
+    public static function aplicarContacto(array $site, array $contacto): array
+    {
+        $telefono = trim((string) ($contacto['telefono'] ?? ''));
+        if ($telefono !== '' && ($enlace = self::numeroInternacional($telefono)) !== null) {
+            $site['telefono_visible'] = $telefono;
+            $site['telefono_enlace'] = $enlace;
+        }
+        $whatsapp = trim((string) ($contacto['whatsapp'] ?? ''));
+        if ($whatsapp !== '' && ($numero = self::numeroInternacional($whatsapp)) !== null) {
+            $site['whatsapp'] = $numero;
+        }
+        return $site;
+    }
+
+    /** "600 12 34 56" → "34600123456"; "+44 7911 123456" → "447911123456"; null si no es válido. */
+    public static function numeroInternacional(string $numero): ?string
+    {
+        $limpio = preg_replace('/[\s.\-()\/]+/', '', $numero);
+        if (preg_match('/^(?:\+34|0034|34)?([6789]\d{8})$/', $limpio, $m)) {
+            return '34' . $m[1];
+        }
+        if (preg_match('/^(?:\+|00)([1-9]\d{7,14})$/', $limpio, $m)) {
+            return $m[1];
+        }
+        return null;
     }
 
     /** Valor de config.local.php con notación "a.b". */
@@ -71,9 +110,13 @@ final class App
     public function clave(): string
     {
         $clave = (string) $this->local('app_key', '');
+        if ($clave === '' && is_file($this->datos . '/app.key')) {
+            // Clave generada en el servidor por el primer despliegue (no sale nunca del servidor).
+            $clave = trim((string) file_get_contents($this->datos . '/app.key'));
+        }
         if (strlen($clave) < 32) {
             if ($this->esProduccion()) {
-                throw new \RuntimeException('Falta app_key (mínimo 32 caracteres) en config.local.php');
+                throw new \RuntimeException('Falta la clave de la aplicación (app.key o app_key en config.local.php, mínimo 32 caracteres)');
             }
             $clave = 'clave-de-desarrollo-no-usar-en-produccion';
         }

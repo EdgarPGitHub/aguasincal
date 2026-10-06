@@ -30,6 +30,8 @@ composer install
 vendor/bin/phpunit                         # tests
 php build/build.php                        # genera dist/ con los datos reales
 php build/build.php --datos=tests/fixtures/data --hoy=2026-10-05   # con datos de prueba
+php build/build.php --noindex              # vista previa: visible pero fuera de Google
+TELEFONO="600 12 34 56" WHATSAPP="600 12 34 56" php build/build.php   # con botones de contacto
 php -S 127.0.0.1:8080 -t dist              # servir la web (el panel queda en /gestion/)
 ```
 
@@ -61,7 +63,13 @@ El generador falla (código de salida 1) si encuentra:
 
 ## Despliegue
 
-`.github/workflows/deploy.yml` despliega al fusionar en `main`: tests → generar → rsync por SSH a Raiola → migraciones → comprobaciones. Los secretos necesarios están en [docs/PASOS.md](docs/PASOS.md).
+`.github/workflows/deploy.yml` despliega al fusionar en `main` (o con Run workflow): tests → generar → rsync por SSH a Raiola → migraciones → comprobaciones.
+
+- Solo actúa con la variable `DESPLIEGUE_ACTIVO=si`.
+- `INDEXAR=no` publica en modo vista previa (noindex).
+- Teléfono y WhatsApp salen de las variables `TELEFONO` y `WHATSAPP`.
+
+Los secretos necesarios están en [docs/PASOS.md](docs/PASOS.md).
 
 ## Datos
 

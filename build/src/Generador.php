@@ -46,7 +46,7 @@ final class Generador
     private Informe $informe;
 
     /**
-     * @param array{salida: string, app: string, panel: string, protegido: bool, htpasswd: string, hoy: string, datos?: string} $opciones
+     * @param array{salida: string, app: string, panel: string, noindex?: bool, hoy: string, datos?: string} $opciones
      */
     public function __construct(private readonly App $app, private readonly array $opciones)
     {
@@ -61,7 +61,10 @@ final class Generador
         $this->zonas = $this->app->config('zonas-publicadas');
         $this->precios = $this->app->config('precios');
         $this->version = $this->calcularVersion();
-        $this->twig = Vista::crear($this->app, null, ['version_assets' => $this->version]);
+        $this->twig = Vista::crear($this->app, null, [
+            'version_assets' => $this->version,
+            'noindex_global' => !empty($this->opciones['noindex']),
+        ]);
         $this->agua = new DatosAgua($this->opciones['datos'] ?? $this->app->raiz . '/data');
 
         $contenido = new Contenido($this->app->raiz . '/content', $this->site);
@@ -668,8 +671,9 @@ final class Generador
 
     private function robots(): string
     {
-        if ($this->opciones['protegido']) {
-            return "User-agent: *\nDisallow: /\n";
+        if (!empty($this->opciones['noindex'])) {
+            // Vista previa: se deja rastrear para que Google vea el noindex (y retire URLs antiguas), sin sitemap.
+            return "User-agent: *\nDisallow: /presupuesto/\nDisallow: /accion/\nDisallow: /api/\n";
         }
         return "User-agent: *\nDisallow: /presupuesto/\nDisallow: /accion/\nDisallow: /api/\n\nSitemap: {$this->site['url']}/sitemap.xml\n";
     }
@@ -684,13 +688,9 @@ final class Generador
             $redirecciones .= 'RedirectMatch 301 ^' . preg_quote(rtrim($desde, '/'), ' ') . '/?$ ' . $hacia . "\n";
         }
         $proteccion = '';
-        if ($this->opciones['protegido']) {
+        if (!empty($this->opciones['noindex'])) {
             $proteccion = <<<TXT
-                # --- Web protegida hasta el lanzamiento ---
-                AuthType Basic
-                AuthName "AguaSinCal (en preparación)"
-                AuthUserFile {$this->opciones['htpasswd']}
-                Require valid-user
+                # --- Vista previa: visible pero fuera de Google hasta el lanzamiento ---
                 <IfModule mod_headers.c>
                 Header always set X-Robots-Tag "noindex, nofollow"
                 </IfModule>

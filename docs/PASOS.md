@@ -10,12 +10,8 @@ Estos datos no bloquean el desarrollo; sin ellos la web no se puede lanzar. Pued
 
 ### Tus datos (aviso legal y privacidad)
 
-- [ ] Nombre o razón social del titular de la web
-- [ ] NIF
-- [ ] Domicilio
-- [ ] Email de contacto público
-- [ ] Email donde quieres recibir los leads
-- [ ] Teléfono público y WhatsApp de la web. Recomiendo un número solo para la web, con WhatsApp Business, para separar los leads de tus llamadas personales.
+- [x] Titular, NIF, domicilio y email público (info@aguasincal.es): ya están en `config/site.php`.
+- [ ] Teléfono público y WhatsApp de la web: cuando los tengas, se ponen como **variables** (ver Paso 4); no hace falta tocar código. Recomiendo un número solo para la web, con WhatsApp Business.
 
 ### Del profesional colaborador
 
@@ -84,26 +80,24 @@ Los cambios se aplican al abrir una sesión nueva.
 
 1. **¿aguasincal.es es el dominio principal de la cuenta?** Dímelo. Si tienes otros dominios dentro de `public_html`, dime sus carpetas: el despliegue sincroniza `public_html` y hay que excluirlas.
 2. **WordPress de prueba:**
-   - Haz una copia completa: **Copias de seguridad** → descargar los archivos y la base de datos.
-   - Dime si quieres conservar algo de él.
+   - Haz una copia completa: **Copias de seguridad** → descargar archivos y base de datos.
    - El primer despliegue sustituye el contenido de `public_html`.
    - Después borra su base de datos desde **Bases de datos MySQL**.
-3. **Selector de PHP:** PHP **8.3** con las extensiones `pdo_sqlite`, `sqlite3`, `mbstring`, `intl` y `opcache` activadas.
+3. **Selector de PHP:** PHP **8.3** con `pdo_sqlite`, `sqlite3`, `mbstring`, `intl` y `opcache` activadas.
 4. **SSH:**
    - **Acceso SSH → Administrar claves SSH → Generar una nueva clave**, sin frase de contraseña.
    - **Autorízala** (Manage → Authorize).
-   - Descarga la **clave privada**: va a GitHub (Paso 4), no al chat.
-   - Apunta el host (por ejemplo, el nombre del servidor de Raiola), el usuario de cPanel y el puerto SSH.
+   - Copia la **clave privada** (botón View/Download): va a GitHub (Paso 4), no al chat.
+   - Apunta el servidor SSH, tu usuario de cPanel y el puerto SSH. Los ves en la portada de cPanel o en el email de alta de Raiola.
 5. **Correo:**
-   - Crea el buzón `avisos@aguasincal.es`. Es el que envía los emails de leads.
-   - En **Email Deliverability**, deja **SPF y DKIM** en verde.
+   - Crea el buzón `info@aguasincal.es`. Es el email público y el que envía los avisos de leads.
+   - En **Email Deliverability** deja **SPF y DKIM** en verde.
    - Añade un registro **DMARC** en el editor de zona DNS. Te paso el valor exacto.
 6. **SSL:** comprueba en **SSL/TLS Status** que aguasincal.es y www tienen certificado (AutoSSL).
 7. **Tarea programada (Cron Jobs)**, una vez al día de madrugada:
    ```
    php ~/aguasincal-app/scripts/cron-diario.php >> ~/aguasincal-data/logs/cron.log 2>&1
    ```
-   Si `php` no es la 8.3 en la línea de comandos, te digo la ruta correcta tras el primer despliegue.
 
 ---
 
@@ -111,33 +105,36 @@ Los cambios se aplican al abrir una sesión nueva.
 
 Repositorio → **Settings → Secrets and variables → Actions**.
 
-### Secrets
+### Secrets (pestaña Secrets → New repository secret)
 
 | Nombre | Qué poner |
 |---|---|
 | `SSH_HOST` | Servidor SSH de Raiola |
 | `SSH_USER` | Usuario de cPanel |
-| `SSH_PORT` | Puerto SSH (si no es 22) |
+| `SSH_PORT` | Puerto SSH (solo si no es 22) |
 | `SSH_KEY` | Contenido completo de la clave privada generada en cPanel |
-| `APP_KEY` | Una cadena aleatoria de 64 caracteres. Genérala, por ejemplo, con un gestor de contraseñas |
-| `PANEL_RUTA` | Nombre de la carpeta del panel, difícil de adivinar, en minúsculas, números y guiones (p. ej. `gestion-7k2m9x`) |
-| `LEADS_EMAIL` | Tu email para recibir los leads |
-| `SMTP_PASS` | Contraseña del buzón `avisos@aguasincal.es` |
+| `SMTP_PASS` | Contraseña del buzón `info@aguasincal.es` |
+| `PANEL_RUTA` | Carpeta del panel, difícil de adivinar: minúsculas, números y guiones (p. ej. `gestion-7k2m9x`) |
 | `ADMIN_EMAIL` | Tu email para entrar al panel |
 | `ADMIN_CLAVE` | Contraseña inicial del panel (mínimo 12 caracteres) |
-| `WEB_CLAVE` | Contraseña para ver la web antes del lanzamiento (usuario: `aguasincal`) |
+| `LEADS_EMAIL` | *(opcional)* Dónde recibir los leads; por defecto `info@aguasincal.es` |
 
-### Variables (opcionales)
+La clave interna de la aplicación se genera sola en el servidor en el primer despliegue.
 
-| Nombre | Por defecto | Para qué |
+### Variables (pestaña Variables → New repository variable)
+
+| Nombre | Valor | Para qué |
 |---|---|---|
-| `PROTEGIDO` | `si` | `si` = web con contraseña y fuera de Google; `no` = lanzamiento |
-| `DOMINIO` | `aguasincal.es` | |
-| `CARPETA_PUBLICA` | `public_html` | |
-| `PHP_BIN` | `php` | Ruta de PHP 8.3 en la línea de comandos si no es la de por defecto |
+| `DESPLIEGUE_ACTIVO` | `si` | Activa el despliegue. Créala cuando los secretos estén puestos |
+| `INDEXAR` | `no` (por defecto) | `no` = web visible pero fuera de Google; `si` = lanzamiento |
+| `TELEFONO` | p. ej. `600 12 34 56` | Teléfono de la web; vacía = sin botón «Llamar» |
+| `WHATSAPP` | p. ej. `600 12 34 56` | WhatsApp de la web; vacía = sin botón de WhatsApp |
+| `PHP_BIN` | `php` | Solo si en SSH `php -v` no es la 8.3 (te lo digo tras el primer despliegue) |
 | `RSYNC_EXCLUIR` | – | Carpetas de `public_html` que el despliegue no debe tocar |
 
-**Publicar** = fusionar el PR en `main`. El despliegue pasa tests y comprobaciones; si algo falla, no sube nada.
+**Publicar o actualizar:** Actions → **Despliegue** → **Run workflow** (o fusionar cambios en `main`). Tarda unos 2 minutos. Si un test o una comprobación falla, no se sube nada.
+
+**Cambiar el teléfono o el WhatsApp:** edita la variable `TELEFONO` o `WHATSAPP` y pulsa **Run workflow**. Los botones de llamar y WhatsApp solo aparecen en las páginas de zonas con profesional, para no recibir llamadas de donde no trabajamos.
 
 **Primer acceso al panel:** entra en `https://aguasincal.es/<PANEL_RUTA>/` con `ADMIN_EMAIL` y `ADMIN_CLAVE`. Te pedirá configurar la verificación en dos pasos con Google Authenticator o similar. Después:
 
@@ -149,8 +146,8 @@ Repositorio → **Settings → Secrets and variables → Actions**.
 
 ## Paso 5 · Lanzamiento
 
-1. Revisas la web protegida y das el visto bueno.
-2. Cambias la variable `PROTEGIDO` a `no` y relanzas el despliegue (Actions → Despliegue → Run workflow).
+1. Revisas la vista previa en aguasincal.es y das el visto bueno.
+2. Cambias la variable `INDEXAR` a `si` y relanzas el despliegue (Actions → Despliegue → Run workflow).
 3. **Search Console:**
    - Añade la propiedad de dominio `aguasincal.es` y verifícala con el registro TXT en el editor de zona DNS de Raiola.
    - Envía `https://aguasincal.es/sitemap.xml`.

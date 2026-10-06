@@ -1,5 +1,7 @@
 # Plan AguaSinCal.es: web de captación de leads de tratamiento de agua
 
+> Plan aprobado el 5-oct-2026. Cambios posteriores: vista previa sin contraseña (noindex), teléfono y WhatsApp como variables de GitHub, un solo buzón (info@) y clave de la app generada en el servidor. Los pasos vigentes están en [PASOS.md](PASOS.md).
+
 ## Contexto
 
 - **Dominio:** aguasincal.es. Hay un WordPress de prueba que se sustituye por una web propia en PHP en el hosting compartido de Raiola (cPanel).

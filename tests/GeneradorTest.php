@@ -20,7 +20,7 @@ final class GeneradorTest extends TestCase
         $app = new App($raiz, sys_get_temp_dir(), ['entorno' => 'build']);
         self::$informe = (new Generador($app, [
             'salida' => self::$salida, 'app' => '../aguasincal-app', 'panel' => 'gestion-prueba',
-            'protegido' => false, 'htpasswd' => '', 'hoy' => '2026-10-05', 'datos' => $raiz . '/tests/fixtures/data',
+            'noindex' => false, 'hoy' => '2026-10-05', 'datos' => $raiz . '/tests/fixtures/data',
         ]))->generar();
     }
 
@@ -65,9 +65,43 @@ final class GeneradorTest extends TestCase
         $htaccess = (string) file_get_contents(self::$salida . '/.htaccess');
         $this->assertStringContainsString('RewriteRule (^|/)_ - [F]', $htaccess);
         $this->assertStringContainsString('Content-Security-Policy', $htaccess);
-        $this->assertStringNotContainsString('AuthType Basic', $htaccess);
+        $this->assertStringNotContainsString('X-Robots-Tag', $htaccess, 'Sin modo vista previa no se bloquea la indexación');
         $indice = json_decode((string) file_get_contents(self::$salida . '/datos/municipios.json'), true);
         $this->assertContains('Vilaprova de Mar', array_column($indice, 'n'));
         $this->assertStringContainsString('Disallow: /presupuesto/', (string) file_get_contents(self::$salida . '/robots.txt'));
+    }
+
+    public function testPaginasLegalesConDatosDelTitular(): void
+    {
+        $aviso = (string) file_get_contents(self::$salida . '/aviso-legal/index.html');
+        $this->assertStringNotContainsString('PENDIENTE', $aviso);
+        $this->assertStringContainsString('Edgar Ponce Anducas', $aviso);
+        $quienes = (string) file_get_contents(self::$salida . '/quienes-somos/index.html');
+        $this->assertStringContainsString('<link rel="canonical"', $quienes, 'Quiénes somos ya es indexable');
+    }
+
+    public function testModoVistaPrevia(): void
+    {
+        $raiz = dirname(__DIR__);
+        $salida = sys_get_temp_dir() . '/aguasincal-previa-' . bin2hex(random_bytes(4));
+        $app = new App($raiz, sys_get_temp_dir(), ['entorno' => 'build', 'contacto' => ['telefono' => '600 12 34 56', 'whatsapp' => '611223344']]);
+        $informe = (new Generador($app, [
+            'salida' => $salida, 'app' => '..', 'panel' => 'gestion', 'noindex' => true, 'hoy' => '2026-10-05',
+            'datos' => $raiz . '/tests/fixtures/data',
+        ]))->generar();
+        $this->assertSame([], $informe->errores);
+        foreach (['/index.html', '/quienes-somos/index.html', '/dureza-agua/barcelona/vilaprova-de-mar/index.html'] as $archivo) {
+            $this->assertStringContainsString('<meta name="robots" content="noindex, nofollow">', (string) file_get_contents($salida . $archivo));
+        }
+        $this->assertStringContainsString('Header always set X-Robots-Tag "noindex, nofollow"', (string) file_get_contents($salida . '/.htaccess'));
+        $this->assertStringNotContainsString('Sitemap:', (string) file_get_contents($salida . '/robots.txt'));
+
+        // Teléfono y WhatsApp solo en páginas de zonas cubiertas.
+        $servicio = (string) file_get_contents($salida . '/descalcificadores/index.html');
+        $this->assertStringContainsString('href="tel:+34600123456"', $servicio);
+        $this->assertStringContainsString('https://wa.me/34611223344', $servicio);
+        $guia = (string) file_get_contents($salida . '/guias/agua-dura-que-es/index.html');
+        $this->assertStringNotContainsString('tel:+', $guia);
+        $this->assertStringNotContainsString('wa.me', $guia);
     }
 }
