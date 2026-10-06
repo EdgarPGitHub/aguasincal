@@ -42,7 +42,7 @@ jobs:
       TELEFONO: ${{ vars.TELEFONO || '' }}
       WHATSAPP: ${{ vars.WHATSAPP || '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: shivammathur/setup-php@v2
         with:
