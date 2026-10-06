@@ -38,6 +38,18 @@ final class Auth
         return (int) $this->db->lastInsertId();
     }
 
+    /** Alta con un hash ya calculado (lo envía el despliegue; la contraseña en claro nunca llega al servidor). */
+    public function crearUsuarioConHash(string $email, string $hash): int
+    {
+        $email = mb_strtolower(trim($email));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !str_starts_with($hash, '$') || password_get_info($hash)['algo'] === null) {
+            throw new \InvalidArgumentException('Usuario inicial no válido');
+        }
+        $st = $this->db->prepare('INSERT INTO admin_usuarios (email, password_hash, creado) VALUES (?, ?, ?)');
+        $st->execute([$email, $hash, Db::ahora()]);
+        return (int) $this->db->lastInsertId();
+    }
+
     public function cambiarClave(int $id, string $clave): void
     {
         if (mb_strlen($clave) < 12) {

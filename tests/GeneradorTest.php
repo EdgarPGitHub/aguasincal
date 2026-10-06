@@ -76,6 +76,9 @@ final class GeneradorTest extends TestCase
         $aviso = (string) file_get_contents(self::$salida . '/aviso-legal/index.html');
         $this->assertStringNotContainsString('PENDIENTE', $aviso);
         $this->assertStringContainsString('Edgar Ponce Anducas', $aviso);
+        $this->assertStringContainsString('class="email-protegido"', $aviso);
+        $this->assertStringNotContainsString('info@aguasincal.es', $aviso, 'El email no aparece en claro (spam)');
+        $this->assertStringNotContainsString('mailto:', $aviso);
         $quienes = (string) file_get_contents(self::$salida . '/quienes-somos/index.html');
         $this->assertStringContainsString('<link rel="canonical"', $quienes, 'Quiénes somos ya es indexable');
     }
@@ -86,10 +89,11 @@ final class GeneradorTest extends TestCase
         $salida = sys_get_temp_dir() . '/aguasincal-previa-' . bin2hex(random_bytes(4));
         $app = new App($raiz, sys_get_temp_dir(), ['entorno' => 'build', 'contacto' => ['telefono' => '600 12 34 56', 'whatsapp' => '611223344']]);
         $informe = (new Generador($app, [
-            'salida' => $salida, 'app' => '..', 'panel' => 'gestion', 'noindex' => true, 'hoy' => '2026-10-05',
+            'salida' => $salida, 'app' => '../../aguasincal-app', 'panel' => 'gestion', 'noindex' => true, 'hoy' => '2026-10-05',
             'datos' => $raiz . '/tests/fixtures/data',
         ]))->generar();
         $this->assertSame([], $informe->errores);
+        $this->assertStringContainsString("'/../../aguasincal-app/app/bootstrap.php'", (string) file_get_contents($salida . '/_app.php'), 'Raíz del dominio a dos niveles');
         foreach (['/index.html', '/quienes-somos/index.html', '/dureza-agua/barcelona/vilaprova-de-mar/index.html'] as $archivo) {
             $this->assertStringContainsString('<meta name="robots" content="noindex, nofollow">', (string) file_get_contents($salida . $archivo));
         }

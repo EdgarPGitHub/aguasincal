@@ -11,13 +11,16 @@ permissions:
 jobs:
   comprobar:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.3', '8.5']   # 8.5 es la versión del servidor
     steps:
       - uses: actions/checkout@v4
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
-          extensions: pdo_sqlite, mbstring, intl
+          php-version: ${{ matrix.php }}
+          extensions: pdo_sqlite, mbstring
           coverage: none
 
       - name: Instalar dependencias
@@ -26,8 +29,10 @@ jobs:
       - name: Auditoría de dependencias
         run: composer audit --no-interaction
 
-      - name: Sintaxis PHP
-        run: find app build scripts config tests -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+      - name: Sintaxis PHP y shell
+        run: |
+          find app build scripts config tests -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+          bash -n scripts/desplegar-ftp.sh
 
       - name: Tests
         run: vendor/bin/phpunit

@@ -1,6 +1,6 @@
 # Plan AguaSinCal.es: web de captación de leads de tratamiento de agua
 
-> Plan aprobado el 5-oct-2026. Cambios posteriores: vista previa sin contraseña (noindex), teléfono y WhatsApp como variables de GitHub, un solo buzón (info@) y clave de la app generada en el servidor. Los pasos vigentes están en [PASOS.md](PASOS.md).
+> Plan aprobado el 5-oct-2026. Cambios posteriores: vista previa sin contraseña (noindex), teléfono y WhatsApp como variables de GitHub, un solo buzón (info@), publicación por FTP (sin SSH ni cron) y clave de la app generada en el servidor. Los pasos vigentes están en [PASOS.md](PASOS.md).
 
 ## Contexto
 

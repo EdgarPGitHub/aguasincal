@@ -1,20 +1,21 @@
-# Despliegue a Raiola (hosting compartido) al fusionar en main, o a mano desde Actions → Despliegue → Run workflow.
+# Despliegue a Raiola por FTP cifrado (FTPS) al fusionar en main, o a mano: Actions → Despliegue → Run workflow.
 #
 # No hace nada hasta que exista la variable DESPLIEGUE_ACTIVO=si (así, fusionar antes de tener los secretos no da errores).
 #
-# En el servidor:
-#   ~/public_html/      ← web generada (dist/)            (rsync --delete; respeta .well-known, cgi-bin, .user.ini…)
-#   ~/aguasincal-app/   ← código PHP + vendor + plantillas (rsync --delete)
-#   ~/aguasincal-data/  ← base de datos, app.key, config.local.php, logs y copias (el despliegue nunca borra nada aquí)
+# En el servidor (carpeta personal de la cuenta FTP):
+#   <CARPETA_PUBLICA>/  ← web generada (dist/)
+#   aguasincal-app/     ← código PHP + vendor + plantillas
+#   aguasincal-data/    ← config.local.php; la web crea aquí la base de datos, app.key y las copias (nunca se borra)
 #
 # Secretos (Settings → Secrets and variables → Actions → Secrets): ver docs/PASOS.md
-#   SSH_HOST, SSH_USER, SSH_KEY, SMTP_PASS, PANEL_RUTA, ADMIN_EMAIL, ADMIN_CLAVE
-#   opcionales: SSH_PORT (22), LEADS_EMAIL (info@dominio), SMTP_USUARIO (info@dominio), SMTP_HOST (mail.dominio)
+#   FTP_HOST, FTP_USUARIO, FTP_CLAVE, SMTP_PASS, PANEL_RUTA, ADMIN_EMAIL, ADMIN_CLAVE
+#   opcionales: LEADS_EMAIL (info@dominio), FTP_PORT (21), SMTP_USUARIO (info@dominio), SMTP_HOST (mail.dominio)
 # Variables (Settings → Secrets and variables → Actions → Variables):
 #   DESPLIEGUE_ACTIVO=si   activa el despliegue
+#   CARPETA_PUBLICA        raíz del dominio dentro de la carpeta personal (por defecto aguasincal.es)
 #   INDEXAR=no|si          "no" (por defecto) = web visible pero con noindex; "si" = lanzamiento
 #   TELEFONO, WHATSAPP     p. ej. "600 12 34 56"; vacías = sin botones de llamar/WhatsApp
-#   DOMINIO (aguasincal.es), CARPETA_PUBLICA (public_html), PHP_BIN (php), RSYNC_EXCLUIR (carpetas a respetar, separadas por espacios)
+#   DOMINIO (aguasincal.es), FTP_VERIFICAR_CERT (si|no, por defecto si)
 name: Despliegue
 
 on:
@@ -34,39 +35,38 @@ jobs:
     if: vars.DESPLIEGUE_ACTIVO == 'si'
     runs-on: ubuntu-latest
     env:
-      SSH_HOST: ${{ secrets.SSH_HOST }}
-      SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
-      SSH_USER: ${{ secrets.SSH_USER }}
       PANEL_RUTA: ${{ secrets.PANEL_RUTA }}
       DOMINIO: ${{ vars.DOMINIO || 'aguasincal.es' }}
-      CARPETA_PUBLICA: ${{ vars.CARPETA_PUBLICA || 'public_html' }}
-      PHP_BIN: ${{ vars.PHP_BIN || 'php' }}
+      CARPETA_PUBLICA: ${{ vars.CARPETA_PUBLICA || 'aguasincal.es' }}
       INDEXAR: ${{ vars.INDEXAR || 'no' }}
       TELEFONO: ${{ vars.TELEFONO || '' }}
       WHATSAPP: ${{ vars.WHATSAPP || '' }}
-      RSYNC_EXCLUIR: ${{ vars.RSYNC_EXCLUIR || '' }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
-          extensions: pdo_sqlite, mbstring, intl
+          php-version: '8.5'
+          extensions: pdo_sqlite, mbstring
           coverage: none
 
-      - name: Comprobar que están todos los secretos
+      - name: Comprobar secretos y variables
         env:
-          SSH_KEY: ${{ secrets.SSH_KEY }}
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USUARIO: ${{ secrets.FTP_USUARIO }}
+          FTP_CLAVE: ${{ secrets.FTP_CLAVE }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           ADMIN_CLAVE: ${{ secrets.ADMIN_CLAVE }}
         run: |
           faltan=""
-          for s in SSH_HOST SSH_USER SSH_KEY SMTP_PASS PANEL_RUTA ADMIN_EMAIL ADMIN_CLAVE; do
+          for s in FTP_HOST FTP_USUARIO FTP_CLAVE SMTP_PASS PANEL_RUTA ADMIN_EMAIL ADMIN_CLAVE; do
             [ -n "${!s}" ] || faltan="$faltan $s"
           done
           if [ -n "$faltan" ]; then echo "::error::Faltan secretos:$faltan (ver docs/PASOS.md)"; exit 1; fi
           [[ "$PANEL_RUTA" =~ ^[a-z0-9][a-z0-9-]{2,40}$ ]] || { echo "::error::PANEL_RUTA solo puede tener minúsculas, números y guiones"; exit 1; }
+          [ ${#ADMIN_CLAVE} -ge 12 ] || { echo "::error::ADMIN_CLAVE debe tener al menos 12 caracteres"; exit 1; }
+          [[ "$CARPETA_PUBLICA" =~ ^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$ ]] || { echo "::error::CARPETA_PUBLICA no válida (p. ej. aguasincal.es)"; exit 1; }
 
       - name: Instalar dependencias y pasar los tests
         run: |
@@ -75,33 +75,12 @@ jobs:
 
       - name: Generar la web
         run: |
-          ARGS="--salida=dist --app=../aguasincal-app --panel=$PANEL_RUTA"
+          # Ruta de la app relativa a la raíz del dominio: una subida (../) por cada nivel de CARPETA_PUBLICA.
+          niveles=$(echo "$CARPETA_PUBLICA" | tr '/' '\n' | grep -c .)
+          app_rel="$(printf '../%.0s' $(seq 1 "$niveles"))aguasincal-app"
+          ARGS="--salida=dist --app=$app_rel --panel=$PANEL_RUTA"
           if [ "$INDEXAR" != "si" ]; then ARGS="$ARGS --noindex"; fi
           php build/build.php $ARGS
-
-      - name: Preparar SSH
-        env:
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-        run: |
-          mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_despliegue && chmod 600 ~/.ssh/id_despliegue
-          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
-          echo "SSH=ssh -i $HOME/.ssh/id_despliegue -p $SSH_PORT -o BatchMode=yes" >> "$GITHUB_ENV"
-          echo "REMOTO=$SSH_USER@$SSH_HOST" >> "$GITHUB_ENV"
-
-      - name: Preparar carpetas y clave de la aplicación en el servidor
-        run: |
-          $SSH "$REMOTO" 'mkdir -p ~/aguasincal-app ~/aguasincal-data/logs ~/aguasincal-data/backups && chmod 700 ~/aguasincal-data
-            if [ ! -s ~/aguasincal-data/app.key ]; then (umask 077; head -c 48 /dev/urandom | base64 | tr -d "\n" > ~/aguasincal-data/app.key); echo "app.key creada"; fi'
-          $SSH "$REMOTO" "$PHP_BIN -v | head -1"
-
-      - name: Conservar el bloque de PHP de cPanel en .htaccess
-        run: |
-          $SSH "$REMOTO" "cat ~/$CARPETA_PUBLICA/.htaccess 2>/dev/null || true" > htaccess-remoto
-          if grep -q 'php -- BEGIN cPanel-generated handler' htaccess-remoto; then
-            printf '\n' >> dist/.htaccess
-            sed -n '/php -- BEGIN cPanel-generated handler/,/php -- END cPanel-generated handler/p' htaccess-remoto >> dist/.htaccess
-          fi
 
       - name: Preparar el paquete de la aplicación
         run: |
@@ -115,6 +94,8 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_USUARIO: ${{ secrets.SMTP_USUARIO }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_CLAVE: ${{ secrets.ADMIN_CLAVE }}
         run: |
           umask 077
           php -r '
@@ -126,6 +107,8 @@ jobs:
               "leads_email" => getenv("LEADS_EMAIL") ?: "info@" . $d,
               "panel_ruta" => getenv("PANEL_RUTA"),
               "contacto" => ["telefono" => (string) getenv("TELEFONO"), "whatsapp" => (string) getenv("WHATSAPP")],
+              // Solo se usa si aún no hay ningún usuario del panel. La contraseña en claro no sale de GitHub.
+              "admin_inicial" => ["email" => getenv("ADMIN_EMAIL"), "hash" => password_hash(getenv("ADMIN_CLAVE"), PASSWORD_BCRYPT)],
               "correo" => [
                 "transporte" => "smtp",
                 "host" => getenv("SMTP_HOST") ?: "mail." . $d,
@@ -139,35 +122,29 @@ jobs:
             ];
             file_put_contents("config.local.php", "<?php\n// Generado por el despliegue. No editar: se sobrescribe.\nreturn " . var_export($c, true) . ";\n");
           '
-          $SSH "$REMOTO" 'umask 077; cat > ~/aguasincal-data/config.local.php' < config.local.php
-          rm -f config.local.php
 
-      - name: Subir aplicación y web
-        run: |
-          RSH="ssh -i $HOME/.ssh/id_despliegue -p $SSH_PORT -o BatchMode=yes"
-          rsync -az --delete -e "$RSH" paquete/ "$REMOTO:aguasincal-app/"
-          EXCLUIR="--exclude=.well-known/ --exclude=cgi-bin/ --exclude=.user.ini --exclude=php.ini --exclude=error_log"
-          for e in $RSYNC_EXCLUIR; do EXCLUIR="$EXCLUIR --exclude=$e"; done
-          rsync -az --delete $EXCLUIR -e "$RSH" dist/ "$REMOTO:$CARPETA_PUBLICA/"
-
-      - name: Migraciones y usuario del panel
+      - name: Subir por FTPS
         env:
-          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
-          ADMIN_CLAVE: ${{ secrets.ADMIN_CLAVE }}
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_PORT: ${{ secrets.FTP_PORT || '21' }}
+          FTP_USUARIO: ${{ secrets.FTP_USUARIO }}
+          LFTP_PASSWORD: ${{ secrets.FTP_CLAVE }}
+          FTP_VERIFICAR_CERT: ${{ vars.FTP_VERIFICAR_CERT || 'si' }}
         run: |
-          $SSH "$REMOTO" "$PHP_BIN ~/aguasincal-app/scripts/admin.php migrar"
-          printf '%s' "$ADMIN_CLAVE" | $SSH "$REMOTO" "ADMIN_CLAVE=\$(cat) $PHP_BIN ~/aguasincal-app/scripts/admin.php crear-usuario '$ADMIN_EMAIL'"
+          sudo apt-get install -y -qq lftp > /dev/null
+          scripts/desplegar-ftp.sh dist paquete config.local.php
+          rm -f config.local.php
 
       - name: Comprobaciones tras el despliegue
         run: |
           comprobar() {
             codigo=$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMINIO$1")
             echo "$1 → $codigo (esperado $2)"
-            [[ "$codigo" =~ ^($2)$ ]] || { echo "::error::$1 devolvió $codigo"; exit 1; }
+            [[ "$codigo" =~ ^($2)$ ]] || { echo "::error::$1 devolvió $codigo. $3"; exit 1; }
           }
-          comprobar / 200
+          comprobar / 200 "¿Es correcta la variable CARPETA_PUBLICA?"
           comprobar /descalcificadores/ 200
-          comprobar /presupuesto/ 200
+          comprobar "/presupuesto/?servicio=descalcificadores&tipo=particular&cp=08201" 200 "Revisa que PHP tenga activadas pdo_sqlite, sqlite3 y mbstring (cPanel → Seleccionar versión de PHP)."
           comprobar "/$PANEL_RUTA/" 303
           comprobar /_app.php 403
           comprobar /_build.json 403
@@ -176,7 +153,8 @@ jobs:
           echo "$cabeceras" | grep -qi 'content-security-policy' || { echo "::error::Faltan las cabeceras de seguridad (.htaccess)"; exit 1; }
           if [ "$INDEXAR" != "si" ]; then
             echo "$cabeceras" | grep -qi 'x-robots-tag: noindex' || { echo "::error::La vista previa debería llevar X-Robots-Tag: noindex"; exit 1; }
-            echo "Vista previa publicada (noindex): https://$DOMINIO/"
+            echo "Vista previa publicada (fuera de Google): https://$DOMINIO/"
           else
             echo "Web publicada e indexable: https://$DOMINIO/"
           fi
+          echo "Panel: https://$DOMINIO/$PANEL_RUTA/"

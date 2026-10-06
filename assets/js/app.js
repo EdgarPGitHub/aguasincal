@@ -4,6 +4,16 @@
   var doc = document.documentElement;
   doc.classList.add('js');
 
+  /* Emails protegidos contra robots de spam: se convierten en enlaces al cargar la página */
+  document.querySelectorAll('.email-protegido').forEach(function (el) {
+    var invertir = function (t) { return (t || '').split('').reverse().join(''); };
+    var email = invertir(el.getAttribute('data-u')) + '@' + invertir(el.getAttribute('data-d'));
+    var enlace = document.createElement('a');
+    enlace.href = 'mailto:' + email;
+    enlace.textContent = email;
+    el.replaceWith(enlace);
+  });
+
   /* Menú móvil */
   var botonMenu = document.querySelector('.menu__boton');
   var nav = document.getElementById('menu-principal');

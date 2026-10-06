@@ -96,4 +96,22 @@ final class SeguridadTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->app()->auth()->crearUsuario('a@ejemplo.test', 'corta');
     }
+
+    public function testUsuarioInicialDesdeHash(): void
+    {
+        $auth = $this->app()->auth();
+        $auth->crearUsuarioConHash('Admin@Ejemplo.test', password_hash('una-clave-bien-larga', PASSWORD_BCRYPT));
+        [$u] = $auth->credenciales('admin@ejemplo.test', 'una-clave-bien-larga', 'ip', 1000);
+        $this->assertNotNull($u);
+        $this->expectException(\InvalidArgumentException::class);
+        $auth->crearUsuarioConHash('otro@ejemplo.test', 'texto-en-claro');
+    }
+
+    public function testEmailProtegido(): void
+    {
+        $html = \AguaSinCal\Vista::emailProtegido('info@aguasincal.es');
+        $this->assertStringNotContainsString('info@aguasincal.es', $html);
+        $this->assertStringContainsString('info [arroba] aguasincal.es', $html);
+        $this->assertStringContainsString('data-u="ofni"', $html);
+    }
 }

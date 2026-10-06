@@ -85,6 +85,7 @@ final class Panel
     {
         $auth = $this->app->auth();
         $ahora = time();
+        $this->asegurarAdminInicial();
         $ipHash = Http::ipHash($this->app->clave());
 
         // Volver a la pantalla de login descarta un acceso a medias.
@@ -143,6 +144,17 @@ final class Panel
             Http::redirigir($this->base . '?r=login');
         }
         return $this->render('panel/login.twig', ['error' => $error]);
+    }
+
+    /** Crea el primer usuario a partir de config.local.php (admin_inicial) si todavía no hay ninguno. */
+    private function asegurarAdminInicial(): void
+    {
+        $email = (string) $this->app->local('admin_inicial.email', '');
+        $hash = (string) $this->app->local('admin_inicial.hash', '');
+        $auth = $this->app->auth();
+        if ($email !== '' && $hash !== '' && !$auth->hayUsuarios()) {
+            $auth->crearUsuarioConHash($email, $hash);
+        }
     }
 
     private function entrar(array $usuario): never

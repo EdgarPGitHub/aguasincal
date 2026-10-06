@@ -76,78 +76,85 @@ Los cambios se aplican al abrir una sesión nueva.
 
 ---
 
-## Paso 3 · cPanel de Raiola (antes del primer despliegue)
+## Paso 3 · cPanel de Raiola (5 minutos)
 
-1. **¿aguasincal.es es el dominio principal de la cuenta?** Dímelo. Si tienes otros dominios dentro de `public_html`, dime sus carpetas: el despliegue sincroniza `public_html` y hay que excluirlas.
-2. **WordPress de prueba:**
-   - Haz una copia completa: **Copias de seguridad** → descargar archivos y base de datos.
-   - El primer despliegue sustituye el contenido de `public_html`.
-   - Después borra su base de datos desde **Bases de datos MySQL**.
-3. **Selector de PHP:** PHP **8.3** con `pdo_sqlite`, `sqlite3`, `mbstring`, `intl` y `opcache` activadas.
-4. **SSH:**
-   - **Acceso SSH → Administrar claves SSH → Generar una nueva clave**, sin frase de contraseña.
-   - **Autorízala** (Manage → Authorize).
-   - Copia la **clave privada** (botón View/Download): va a GitHub (Paso 4), no al chat.
-   - Apunta el servidor SSH, tu usuario de cPanel y el puerto SSH. Los ves en la portada de cPanel o en el email de alta de Raiola.
-5. **Correo:**
-   - Crea el buzón `info@aguasincal.es`. Es el email público y el que envía los avisos de leads.
-   - En **Email Deliverability** deja **SPF y DKIM** en verde.
-   - Añade un registro **DMARC** en el editor de zona DNS. Te paso el valor exacto.
-6. **SSL:** comprueba en **SSL/TLS Status** que aguasincal.es y www tienen certificado (AutoSSL).
-7. **Tarea programada (Cron Jobs)**, una vez al día de madrugada:
-   ```
-   php ~/aguasincal-app/scripts/cron-diario.php >> ~/aguasincal-data/logs/cron.log 2>&1
-   ```
+1. **Carpeta del dominio.** En **Dominios**, mira la columna «Raíz del documento» de aguasincal.es. Normalmente es `/home/TUUSUARIO/aguasincal.es`; apunta lo que va después de `/home/TUUSUARIO/` (por ejemplo `aguasincal.es` o `public_html/aguasincal.es`).
+2. **PHP.** En **Seleccionar versión de PHP** (o MultiPHP), con PHP 8.5 en aguasincal.es, comprueba que están activadas las extensiones `pdo_sqlite`, `sqlite3` y `mbstring`.
+3. **Cuenta FTP para publicar.** En **Cuentas FTP → Agregar cuenta FTP**:
+   - Inicio de sesión: `despliegue` (quedará `despliegue@aguasincal.es`).
+   - Contraseña: usa el generador y guárdala; va a GitHub.
+   - **Directorio: bórralo y escribe `/`.** Necesita la carpeta personal para crear `aguasincal-app` y `aguasincal-data` fuera de la parte pública.
+   - Cuota: ilimitada.
+   - Después, en esa misma pantalla, «Configurar cliente FTP» te muestra el **servidor FTP**. Usa el nombre del servidor, porque su certificado es válido.
+4. **Correo (ya tienes info@).** En **Email Deliverability**, deja SPF y DKIM en verde (botón «Reparar» si sale en rojo).
+5. **Menos spam en info@:**
+   - **Dirección predeterminada** (Default Address) → «Descartar con un error al remitente». Si ahora recoge todo lo que llega a direcciones que no existen, aquí entra mucho spam.
+   - **Filtros de spam** (Spam Filters):
+     - activa «Procesar correo nuevo y marcar como spam»;
+     - activa «Mover el spam a una carpeta independiente»;
+     - activa «Eliminar automáticamente» con puntuación **8**. Cuando veas que no se pierde nada bueno, baja a 6.
+   - Para los leads usa un email que no esté publicado (secreto `LEADS_EMAIL`, por ejemplo tu Gmail), para que no se mezclen con el spam.
+   - La web ya no deja info@ a la vista de los robots: se muestra como «info [arroba] aguasincal.es» y se convierte en enlace solo para las personas.
+
+No hace falta SSH ni tarea cron: la web hace sola su copia de seguridad diaria y la limpieza de datos antiguos.
 
 ---
 
-## Paso 4 · GitHub (despliegue automático)
+## Paso 4 · GitHub (10 minutos)
 
-Repositorio → **Settings → Secrets and variables → Actions**.
+### 1. Secretos
 
-### Secrets (pestaña Secrets → New repository secret)
+Abre **https://github.com/EdgarPGitHub/aguasincal/settings/secrets/actions** → botón **New repository secret**. Crea uno por fila (Name = nombre exacto, Secret = valor):
 
-| Nombre | Qué poner |
+| Name | Secret |
 |---|---|
-| `SSH_HOST` | Servidor SSH de Raiola |
-| `SSH_USER` | Usuario de cPanel |
-| `SSH_PORT` | Puerto SSH (solo si no es 22) |
-| `SSH_KEY` | Contenido completo de la clave privada generada en cPanel |
+| `FTP_HOST` | Servidor FTP del Paso 3.3 |
+| `FTP_USUARIO` | `despliegue@aguasincal.es` |
+| `FTP_CLAVE` | Contraseña de esa cuenta FTP |
 | `SMTP_PASS` | Contraseña del buzón `info@aguasincal.es` |
-| `PANEL_RUTA` | Carpeta del panel, difícil de adivinar: minúsculas, números y guiones (p. ej. `gestion-7k2m9x`) |
+| `LEADS_EMAIL` | Email donde quieres recibir los leads (mejor uno no publicado) |
 | `ADMIN_EMAIL` | Tu email para entrar al panel |
-| `ADMIN_CLAVE` | Contraseña inicial del panel (mínimo 12 caracteres) |
-| `LEADS_EMAIL` | *(opcional)* Dónde recibir los leads; por defecto `info@aguasincal.es` |
+| `ADMIN_CLAVE` | Contraseña del panel (mínimo 12 caracteres) |
+| `PANEL_RUTA` | Nombre secreto de la carpeta del panel: minúsculas, números y guiones (p. ej. `gestion-7k2m9x`) |
 
-La clave interna de la aplicación se genera sola en el servidor en el primer despliegue.
+### 2. Variables
 
-### Variables (pestaña Variables → New repository variable)
+En la misma página, pestaña **Variables** → **New repository variable**:
 
-| Nombre | Valor | Para qué |
-|---|---|---|
-| `DESPLIEGUE_ACTIVO` | `si` | Activa el despliegue. Créala cuando los secretos estén puestos |
-| `INDEXAR` | `no` (por defecto) | `no` = web visible pero fuera de Google; `si` = lanzamiento |
-| `TELEFONO` | p. ej. `600 12 34 56` | Teléfono de la web; vacía = sin botón «Llamar» |
-| `WHATSAPP` | p. ej. `600 12 34 56` | WhatsApp de la web; vacía = sin botón de WhatsApp |
-| `PHP_BIN` | `php` | Solo si en SSH `php -v` no es la 8.3 (te lo digo tras el primer despliegue) |
-| `RSYNC_EXCLUIR` | – | Carpetas de `public_html` que el despliegue no debe tocar |
+| Name | Value |
+|---|---|
+| `CARPETA_PUBLICA` | Lo que apuntaste en el Paso 3.1 (p. ej. `aguasincal.es`) |
+| `DESPLIEGUE_ACTIVO` | `si` |
 
-**Publicar o actualizar:** Actions → **Despliegue** → **Run workflow** (o fusionar cambios en `main`). Tarda unos 2 minutos. Si un test o una comprobación falla, no se sube nada.
+### 3. Rama principal
 
-**Cambiar el teléfono o el WhatsApp:** edita la variable `TELEFONO` o `WHATSAPP` y pulsa **Run workflow**. Los botones de llamar y WhatsApp solo aparecen en las páginas de zonas con profesional, para no recibir llamadas de donde no trabajamos.
+**https://github.com/EdgarPGitHub/aguasincal/settings** → «Default branch» → icono de flechas → elige `main` → Update.
 
-**Primer acceso al panel:** entra en `https://aguasincal.es/<PANEL_RUTA>/` con `ADMIN_EMAIL` y `ADMIN_CLAVE`. Te pedirá configurar la verificación en dos pasos con Google Authenticator o similar. Después:
+### 4. Publicar
 
-- En **Contraseña**, cambia la contraseña inicial.
-- En **Profesionales**, da de alta a tu profesional.
-- En **Cobertura**, activa las provincias 08, 17, 25, 43 y 29 para todos sus servicios.
+**https://github.com/EdgarPGitHub/aguasincal/actions/workflows/deploy.yml** → **Run workflow** → rama `main` → **Run workflow**.
+
+En unos 3 minutos aparece un ✓ verde y la web está en https://aguasincal.es (visible, pero fuera de Google). Si sale una ✗ roja, ábrela: el mensaje dice qué falta. Si no te queda claro, cópiamelo.
+
+### 5. Primer acceso al panel
+
+1. Entra en `https://aguasincal.es/<PANEL_RUTA>/` con `ADMIN_EMAIL` y `ADMIN_CLAVE`.
+2. La primera vez te pide la verificación en dos pasos: escanea el QR con Google Authenticator (o similar) y escribe el código.
+3. En **Profesionales**, da de alta a tu profesional.
+4. En **Cobertura**, activa las provincias 08, 17, 25, 43 y 29 para sus servicios.
+
+### Más adelante
+
+- **Teléfono / WhatsApp:** crea las variables `TELEFONO` y `WHATSAPP` (p. ej. `600 12 34 56`) y vuelve a pulsar **Run workflow**. Los botones solo aparecen en las páginas de zonas con profesional.
+- **Lanzamiento:** variable `INDEXAR` = `si` y **Run workflow**.
+- Si GitHub dice que el certificado del servidor FTP no es válido, revisa que `FTP_HOST` sea el nombre del servidor que muestra «Configurar cliente FTP».
 
 ---
 
 ## Paso 5 · Lanzamiento
 
 1. Revisas la vista previa en aguasincal.es y das el visto bueno.
-2. Cambias la variable `INDEXAR` a `si` y relanzas el despliegue (Actions → Despliegue → Run workflow).
+2. Cambias la variable `INDEXAR` a `si` y vuelves a publicar (Actions → Despliegue → Run workflow).
 3. **Search Console:**
    - Añade la propiedad de dominio `aguasincal.es` y verifícala con el registro TXT en el editor de zona DNS de Raiola.
    - Envía `https://aguasincal.es/sitemap.xml`.

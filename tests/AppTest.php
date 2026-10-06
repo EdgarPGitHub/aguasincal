@@ -52,9 +52,20 @@ final class AppTest extends TestCase
         $this->assertSame(str_repeat('z', 48), $app->clave());
     }
 
-    public function testEnProduccionSinClaveFalla(): void
+
+    public function testEnProduccionLaClaveSeCreaUnaSolaVez(): void
     {
-        $this->expectException(\RuntimeException::class);
-        (new App(dirname(__DIR__), sys_get_temp_dir() . '/no-existe-' . bin2hex(random_bytes(3)), ['entorno' => 'produccion']))->clave();
+        $datos = sys_get_temp_dir() . '/aguasincal-nueva-' . bin2hex(random_bytes(4));
+        $clave = (new App(dirname(__DIR__), $datos, ['entorno' => 'produccion']))->clave();
+        $this->assertGreaterThanOrEqual(32, strlen($clave));
+        $this->assertSame('0600', substr(sprintf('%o', fileperms($datos . '/app.key')), -4));
+        $this->assertSame($clave, (new App(dirname(__DIR__), $datos, ['entorno' => 'produccion']))->clave(), 'Se reutiliza');
+    }
+
+    public function testEnDesarrolloNoSeCreaArchivoDeClave(): void
+    {
+        $datos = sys_get_temp_dir() . '/aguasincal-dev-' . bin2hex(random_bytes(4));
+        (new App(dirname(__DIR__), $datos, ['entorno' => 'desarrollo']))->clave();
+        $this->assertFileDoesNotExist($datos . '/app.key');
     }
 }

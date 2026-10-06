@@ -44,6 +44,7 @@ final class Vista
         $twig->addFilter(new TwigFilter('num', fn (float|int|string|null $n, int $dec = 0): string => $n === null || $n === ''
             ? '–' : number_format((float) $n, $dec, ',', '.')));
         $twig->addFilter(new TwigFilter('fecha', [self::class, 'fecha']));
+        $twig->addFilter(new TwigFilter('email_protegido', [self::class, 'emailProtegido'], ['is_safe' => ['html']]));
         return $twig;
     }
 
@@ -60,6 +61,23 @@ final class Vista
         $meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
         $mes = $meses[(int) gmdate('n', $t) - 1];
         return $sinDia ? $mes . ' de ' . gmdate('Y', $t) : gmdate('j', $t) . ' de ' . $mes . ' de ' . gmdate('Y', $t);
+    }
+
+    /**
+     * Email difícil de recolectar por robots de spam: en el HTML no aparece la dirección completa
+     * ni un enlace mailto; assets/js/app.js lo convierte en un enlace normal para las personas.
+     */
+    public static function emailProtegido(string $email): string
+    {
+        $email = trim($email);
+        $pos = strrpos($email, '@');
+        if ($pos === false) {
+            return htmlspecialchars($email, ENT_QUOTES);
+        }
+        $usuario = htmlspecialchars(substr($email, 0, $pos), ENT_QUOTES);
+        $dominio = htmlspecialchars(substr($email, $pos + 1), ENT_QUOTES);
+        return '<span class="email-protegido" data-u="' . strrev($usuario) . '" data-d="' . strrev($dominio) . '">'
+            . $usuario . ' [arroba] ' . $dominio . '</span>';
     }
 
     /** Versión de los assets: la escribe el generador en _build.json junto a la web publicada. */

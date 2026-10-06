@@ -33,6 +33,7 @@ final class Comprobaciones
             $html = (string) file_get_contents($p['archivo']);
             $this->comprobarEnlaces($ruta, $html, $rutasValidas, $paginas, $p['indexable']);
             $this->comprobarJsonLd($ruta, $html);
+            $this->comprobarEmails($ruta, $html);
             if ($p['indexable']) {
                 $indexables++;
                 $this->comprobarMetadatos($ruta, $html);
@@ -78,6 +79,14 @@ final class Comprobaciones
             if ($indexable && isset($paginas[$limpia]) && !$paginas[$limpia]['indexable'] && !in_array($paginas[$limpia]['tipo'], ['pagina', 'sistema'], true)) {
                 $this->enlacesABorrador[$limpia][$ruta] = true;
             }
+        }
+    }
+
+    /** Ningún email en claro ni mailto: (se usan |email_protegido y %…email%), para no atraer spam. */
+    private function comprobarEmails(string $ruta, string $html): void
+    {
+        if (str_contains($html, 'mailto:') || preg_match('/[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}/i', $html, $m)) {
+            $this->informe->error("$ruta: contiene un email sin proteger" . (isset($m[0]) ? " ({$m[0]})" : ' (mailto:)') . '. Usa el filtro email_protegido.');
         }
     }
 

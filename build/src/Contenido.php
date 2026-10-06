@@ -57,7 +57,7 @@ final class Contenido
             }
         }
         $avisos = [];
-        $cuerpo = $this->sustituir($m[2], $avisos);
+        $cuerpo = $this->sustituir($m[2], $avisos, true);
         foreach (['titulo', 'descripcion', 'entradilla', 'seo_title'] as $campo) {
             if (isset($fm[$campo]) && is_string($fm[$campo])) {
                 $fm[$campo] = $this->sustituir($fm[$campo], $avisos);
@@ -79,9 +79,10 @@ final class Contenido
     }
 
     /** @param list<string> $avisos */
-    private function sustituir(string $texto, array &$avisos): string
+    /** @param bool $html true en el cuerpo Markdown: los emails se escriben protegidos contra robots de spam. */
+    private function sustituir(string $texto, array &$avisos, bool $html = false): string
     {
-        return preg_replace_callback('/%([a-z_]+(?:\.[a-z_]+)*)%/', function (array $m) use (&$avisos): string {
+        return preg_replace_callback('/%([a-z_]+(?:\.[a-z_]+)*)%/', function (array $m) use (&$avisos, $html): string {
             $valor = $this->site;
             foreach (explode('.', $m[1]) as $parte) {
                 $valor = is_array($valor) ? ($valor[$parte] ?? null) : null;
@@ -89,6 +90,9 @@ final class Contenido
             if (!is_scalar($valor) || (string) $valor === '') {
                 $avisos[] = 'Falta el dato "' . $m[1] . '" en config/site.php';
                 return '[' . strtoupper($m[1]) . ' PENDIENTE]';
+            }
+            if ($html && str_contains($m[1], 'email')) {
+                return \AguaSinCal\Vista::emailProtegido((string) $valor);
             }
             return (string) $valor;
         }, $texto);

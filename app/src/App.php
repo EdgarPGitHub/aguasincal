@@ -20,6 +20,7 @@ final class App
     private ?PDO $pdo = null;
     private ?Environment $twig = null;
     private ?Provincias $provincias = null;
+    private ?string $claveCache = null;
 
     public function __construct(
         public readonly string $raiz,
@@ -109,18 +110,42 @@ final class App
 
     public function clave(): string
     {
+        if ($this->claveCache !== null) {
+            return $this->claveCache;
+        }
         $clave = (string) $this->local('app_key', '');
-        if ($clave === '' && is_file($this->datos . '/app.key')) {
-            // Clave generada en el servidor por el primer despliegue (no sale nunca del servidor).
-            $clave = trim((string) file_get_contents($this->datos . '/app.key'));
+        if ($clave === '') {
+            $clave = $this->claveDeArchivo($this->esProduccion());
         }
         if (strlen($clave) < 32) {
             if ($this->esProduccion()) {
-                throw new \RuntimeException('Falta la clave de la aplicación (app.key o app_key en config.local.php, mínimo 32 caracteres)');
+                throw new \RuntimeException('No se ha podido leer ni crear la clave de la aplicación en ' . $this->datos . '/app.key');
             }
             $clave = 'clave-de-desarrollo-no-usar-en-produccion';
         }
-        return $clave;
+        return $this->claveCache = $clave;
+    }
+
+    /**
+     * Clave guardada en datos/app.key. En producción se crea sola la primera vez (no sale nunca del servidor).
+     * Se escribe en un temporal y se enlaza para que dos peticiones simultáneas no generen claves distintas.
+     */
+    private function claveDeArchivo(bool $crear): string
+    {
+        $archivo = $this->datos . '/app.key';
+        if (!is_file($archivo) && $crear) {
+            if (!is_dir($this->datos)) {
+                mkdir($this->datos, 0700, true);
+            }
+            $temporal = $archivo . '.' . bin2hex(random_bytes(4));
+            file_put_contents($temporal, base64_encode(random_bytes(48)));
+            chmod($temporal, 0600);
+            if (!@link($temporal, $archivo) && !is_file($archivo)) {
+                rename($temporal, $archivo);
+            }
+            @unlink($temporal);
+        }
+        return is_file($archivo) ? trim((string) file_get_contents($archivo)) : '';
     }
 
     public function db(): PDO
@@ -133,7 +158,11 @@ final class App
                 }
                 $dsn = 'sqlite:' . $this->datos . '/aguasincal.sqlite';
             }
+            $nueva = str_starts_with($dsn, 'sqlite:/') && !is_file(substr($dsn, 7));
             $this->pdo = Db::conectar($dsn);
+            if ($nueva) {
+                @chmod(substr($dsn, 7), 0600);
+            }
             Db::migrar($this->pdo, $this->raiz . '/migrations');
         }
         return $this->pdo;

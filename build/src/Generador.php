@@ -536,9 +536,6 @@ final class Generador
             'url' => $this->site['url'] . '/',
             'logo' => $this->site['url'] . '/favicon.svg',
         ];
-        if ($this->site['email_publico'] !== '') {
-            $org['email'] = $this->site['email_publico'];
-        }
         if ($this->site['telefono_enlace'] !== '') {
             $org['telephone'] = '+' . $this->site['telefono_enlace'];
         }

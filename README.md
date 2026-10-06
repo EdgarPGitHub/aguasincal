@@ -63,13 +63,19 @@ El generador falla (código de salida 1) si encuentra:
 
 ## Despliegue
 
-`.github/workflows/deploy.yml` despliega al fusionar en `main` (o con Run workflow): tests → generar → rsync por SSH a Raiola → migraciones → comprobaciones.
+`.github/workflows/deploy.yml` publica al fusionar en `main` o con **Run workflow**:
 
+1. tests;
+2. generar la web;
+3. subir por **FTPS** (`scripts/desplegar-ftp.sh`, con `lftp`);
+4. comprobaciones HTTP.
+
+- No necesita SSH ni cron: la clave de la app (`app.key`), las migraciones, el primer usuario del panel y las tareas diarias (`app/src/Mantenimiento.php`) los resuelve la propia web.
 - Solo actúa con la variable `DESPLIEGUE_ACTIVO=si`.
 - `INDEXAR=no` publica en modo vista previa (noindex).
 - Teléfono y WhatsApp salen de las variables `TELEFONO` y `WHATSAPP`.
 
-Los secretos necesarios están en [docs/PASOS.md](docs/PASOS.md).
+Los secretos y variables necesarios están en [docs/PASOS.md](docs/PASOS.md).
 
 ## Datos
 
