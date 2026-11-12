@@ -1,6 +1,8 @@
 # Despliegue a Raiola por FTP cifrado (FTPS) al fusionar en main, o a mano: Actions → Despliegue → Run workflow.
 #
-# No hace nada hasta que exista la variable DESPLIEGUE_ACTIVO=si (así, fusionar antes de tener los secretos no da errores).
+# Al fusionar en main solo publica si existe la variable DESPLIEGUE_ACTIVO=si. A mano (Run workflow) publica siempre.
+# Solo son imprescindibles los secretos del FTP. Sin PANEL_RUTA/ADMIN_* no hay acceso al panel; sin SMTP_PASS
+# los emails se guardan en aguasincal-data/correo/ en vez de enviarse. Al crearlos, el siguiente despliegue los activa.
 #
 # En el servidor (carpeta personal de la cuenta FTP):
 #   <CARPETA_PUBLICA>/  ← web generada (dist/)
@@ -32,10 +34,10 @@ permissions:
 
 jobs:
   desplegar:
-    if: vars.DESPLIEGUE_ACTIVO == 'si'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || vars.DESPLIEGUE_ACTIVO == 'si')
     runs-on: ubuntu-latest
     env:
-      PANEL_RUTA: ${{ secrets.PANEL_RUTA }}
+      PANEL_RUTA_SECRETO: ${{ secrets.PANEL_RUTA }}
       DOMINIO: ${{ vars.DOMINIO || 'aguasincal.es' }}
       CARPETA_PUBLICA: ${{ vars.CARPETA_PUBLICA || 'public_html' }}
       INDEXAR: ${{ vars.INDEXAR || 'no' }}
@@ -59,14 +61,22 @@ jobs:
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           ADMIN_CLAVE: ${{ secrets.ADMIN_CLAVE }}
         run: |
-          faltan=""
-          for s in FTP_HOST FTP_USUARIO FTP_CLAVE SMTP_PASS PANEL_RUTA ADMIN_EMAIL ADMIN_CLAVE; do
-            [ -n "${!s}" ] || faltan="$faltan $s"
+          for s in FTP_HOST FTP_USUARIO FTP_CLAVE; do
+            [ -n "${!s}" ] || { echo "::error::Falta el secreto $s (ver docs/PASOS.md)"; exit 1; }
           done
-          if [ -n "$faltan" ]; then echo "::error::Faltan secretos:$faltan (ver docs/PASOS.md)"; exit 1; fi
-          [[ "$PANEL_RUTA" =~ ^[a-z0-9][a-z0-9-]{2,40}$ ]] || { echo "::error::PANEL_RUTA solo puede tener minúsculas, números y guiones"; exit 1; }
-          [ ${#ADMIN_CLAVE} -ge 12 ] || { echo "::error::ADMIN_CLAVE debe tener al menos 12 caracteres"; exit 1; }
-          [[ "$CARPETA_PUBLICA" =~ ^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$ ]] || { echo "::error::CARPETA_PUBLICA no válida (p. ej. aguasincal.es)"; exit 1; }
+          [[ "$CARPETA_PUBLICA" =~ ^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$ ]] || { echo "::error::CARPETA_PUBLICA no válida (p. ej. public_html)"; exit 1; }
+          if [ -n "$PANEL_RUTA_SECRETO" ] && [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_CLAVE" ]; then
+            [[ "$PANEL_RUTA_SECRETO" =~ ^[a-z0-9][a-z0-9-]{2,40}$ ]] || { echo "::error::PANEL_RUTA solo puede tener minúsculas, números y guiones"; exit 1; }
+            [ ${#ADMIN_CLAVE} -ge 12 ] || { echo "::error::ADMIN_CLAVE debe tener al menos 12 caracteres"; exit 1; }
+            echo "PANEL_RUTA=$PANEL_RUTA_SECRETO" >> "$GITHUB_ENV"
+            echo "PANEL_ACTIVO=si" >> "$GITHUB_ENV"
+          else
+            # Sin acceso al panel: carpeta con nombre aleatorio y sin usuarios (nadie puede entrar).
+            echo "::warning::Sin PANEL_RUTA, ADMIN_EMAIL o ADMIN_CLAVE: el panel queda cerrado hasta crearlos."
+            echo "PANEL_RUTA=cerrado-$(openssl rand -hex 12)" >> "$GITHUB_ENV"
+            echo "PANEL_ACTIVO=no" >> "$GITHUB_ENV"
+          fi
+          [ -n "$SMTP_PASS" ] || echo "::warning::Sin SMTP_PASS: los emails se guardan en el servidor (aguasincal-data/correo/) en vez de enviarse."
 
       - name: Instalar dependencias y pasar los tests
         run: |
@@ -108,9 +118,11 @@ jobs:
               "panel_ruta" => getenv("PANEL_RUTA"),
               "contacto" => ["telefono" => (string) getenv("TELEFONO"), "whatsapp" => (string) getenv("WHATSAPP")],
               // Solo se usa si aún no hay ningún usuario del panel. La contraseña en claro no sale de GitHub.
-              "admin_inicial" => ["email" => getenv("ADMIN_EMAIL"), "hash" => password_hash(getenv("ADMIN_CLAVE"), PASSWORD_BCRYPT)],
+              "admin_inicial" => getenv("PANEL_ACTIVO") === "si"
+                ? ["email" => getenv("ADMIN_EMAIL"), "hash" => password_hash(getenv("ADMIN_CLAVE"), PASSWORD_BCRYPT)]
+                : [],
               "correo" => [
-                "transporte" => "smtp",
+                "transporte" => getenv("SMTP_PASS") ? "smtp" : "archivo",
                 "host" => getenv("SMTP_HOST") ?: "mail." . $d,
                 "puerto" => 465,
                 "seguridad" => "ssl",
@@ -145,7 +157,7 @@ jobs:
           comprobar / 200 "¿Es correcta la variable CARPETA_PUBLICA?"
           comprobar /descalcificadores/ 200
           comprobar "/presupuesto/?servicio=descalcificadores&tipo=particular&cp=08201" 200 "Revisa que PHP tenga activadas pdo_sqlite, sqlite3 y mbstring (cPanel → Seleccionar versión de PHP)."
-          comprobar "/$PANEL_RUTA/" 303
+          [ "$PANEL_ACTIVO" = "si" ] && comprobar "/$PANEL_RUTA/" 303
           comprobar /_app.php 403
           comprobar /_build.json 403
           comprobar /noexiste-xyz/ 404
@@ -157,4 +169,4 @@ jobs:
           else
             echo "Web publicada e indexable: https://$DOMINIO/"
           fi
-          echo "Panel: https://$DOMINIO/$PANEL_RUTA/"
+          if [ "$PANEL_ACTIVO" = "si" ]; then echo "Panel: https://$DOMINIO/$PANEL_RUTA/"; else echo "Panel cerrado: faltan PANEL_RUTA, ADMIN_EMAIL o ADMIN_CLAVE."; fi
