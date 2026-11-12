@@ -71,7 +71,7 @@ El generador falla (código de salida 1) si encuentra:
 4. comprobaciones HTTP.
 
 - No necesita SSH ni cron: la clave de la app (`app.key`), las migraciones, el primer usuario del panel y las tareas diarias (`app/src/Mantenimiento.php`) los resuelve la propia web.
-- Solo actúa con la variable `DESPLIEGUE_ACTIVO=si`.
+- Al fusionar en `main` solo publica con la variable `DESPLIEGUE_ACTIVO=si`; con **Run workflow** publica siempre. Basta con los secretos del FTP: sin los del panel, el panel queda cerrado; sin `SMTP_PASS`, los emails se guardan en el servidor.
 - `INDEXAR=no` publica en modo vista previa (noindex).
 - Teléfono y WhatsApp salen de las variables `TELEFONO` y `WHATSAPP`.
 
@@ -81,5 +81,10 @@ Los secretos y variables necesarios están en [docs/PASOS.md](docs/PASOS.md).
 
 - `scripts/semillas_keywords.php` y `scripts/dataforseo.php`: estudio de keywords y posiciones (necesita `DATAFORSEO_LOGIN` y `DATAFORSEO_PASSWORD`).
 - `scripts/municipios.php`: genera `data/municipios.csv` (padrón del INE y centro de cada municipio con límites del IGN). Una vez al año.
-- `scripts/sinac.php`: descarga del SINAC los datos del agua de cada municipio a `data/sinac.jsonl` (lo hace sola la tarea mensual de GitHub).
+- `scripts/sinac.php`: descarga del SINAC los datos del agua de cada municipio a `data/sinac.jsonl`. Lo hace sola la tarea semanal de GitHub (`datos-agua.yml`, 3 partes en paralelo).
+- `data/empresas.csv` (opcional): fichas del directorio añadidas por nosotros. La web las importa sola al cambiar el archivo y nunca pisa lo que haya cambiado la empresa.
+
+## Directorio de empresas
+
+Páginas PHP (`app/src/Controladores/Empresas.php`): `/empresas/`, `/empresas/{provincia}/{municipio}/`, `/empresa/{slug}/`, alta, acceso con enlace por email y `sitemap-empresas.xml`. Cada empresa es una fila de `profesionales` con ficha pública (`app/src/Directorio.php`), así que también puede recibir leads. Orden: destacadas vigentes primero y luego por cercanía, dentro del radio de cada empresa.
 - Escala de dureza y supuestos de cálculo: `app/src/Agua.php`, replicados en `assets/js/app.js`.
