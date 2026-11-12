@@ -85,7 +85,7 @@ Los cambios se aplican al abrir una sesión nueva.
    - Contraseña: usa el generador y guárdala; va a GitHub.
    - **Directorio: la carpeta del dominio** (`/home/TUUSUARIO/aguasincal.es`). Así la cuenta solo ve esta web, y puede crear `aguasincal-app` y `aguasincal-data` junto a `public_html`.
    - Cuota: ilimitada.
-   - Después, en esa misma pantalla, «Configurar cliente FTP» te muestra el **servidor FTP**. Usa el nombre del servidor, porque su certificado es válido.
+   - **Servidor FTP:** en cPanel → «Información general» (columna derecha) → «Información del servidor» → **Nombre de host**. Usa ese nombre y no `ftp.aguasincal.es`: el certificado de cifrado solo es válido para el nombre del servidor.
 4. **Correo (ya tienes info@).** En **Email Deliverability**, deja SPF y DKIM en verde (botón «Reparar» si sale en rojo).
 5. **Menos spam en info@:**
    - **Dirección predeterminada** (Default Address) → «Descartar con un error al remitente». Si ahora recoge todo lo que llega a direcciones que no existen, aquí entra mucho spam.
@@ -108,7 +108,7 @@ Abre **https://github.com/EdgarPGitHub/aguasincal/settings/secrets/actions** →
 
 | Name | Secret |
 |---|---|
-| `FTP_HOST` | Servidor FTP del Paso 3.3 |
+| `FTP_HOST` | Nombre de host del servidor (Paso 3.3), no `ftp.aguasincal.es` |
 | `FTP_USUARIO` | `deploy@aguasincal.es` |
 | `FTP_CLAVE` | Contraseña de esa cuenta FTP |
 | `SMTP_PASS` | Contraseña del buzón `info@aguasincal.es` |
