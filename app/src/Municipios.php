@@ -55,6 +55,12 @@ final class Municipios
             $temporal = $cache . '.' . bin2hex(random_bytes(4));
             file_put_contents($temporal, '<?php return ' . var_export($todos, true) . ';');
             rename($temporal, $cache);
+            // Cada despliegue cambia la fecha del CSV: se borran las cachés anteriores.
+            foreach (glob($this->dirCache . '/municipios-*.php') ?: [] as $viejo) {
+                if ($viejo !== $cache) {
+                    @unlink($viejo);
+                }
+            }
         }
         return $this->todos = $todos;
     }
