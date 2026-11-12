@@ -62,6 +62,15 @@ jobs:
           nota() { echo "$1"; echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
           nota "## Acceso FTP"
           sudo apt-get install -y -qq lftp > /dev/null 2>&1
+          # Nombres para los que es válido el certificado del FTP (lo que debe ir en FTP_HOST). No son secretos.
+          cert=$(echo | timeout 20 openssl s_client -starttls ftp -connect "$FTP_HOST:$FTP_PORT" 2>/dev/null | openssl x509 -noout -subject -ext subjectAltName 2>/dev/null || true)
+          if [ -n "$cert" ]; then
+            nota "- ℹ️ El certificado del servidor FTP es válido para:"
+            echo "$cert" | grep -oE '(CN ?= ?|DNS:)[^,/ ]+' | sed -E 's/^(CN ?= ?|DNS:)//' | sort -u | while IFS= read -r n; do nota "    $n"; done
+          fi
+          ip=$(getent ahostsv4 "$FTP_HOST" | awk 'NR==1{print $1}')
+          inverso=$(python3 -c "import socket,sys;print(socket.gethostbyaddr(sys.argv[1])[0])" "$ip" 2>/dev/null || true)
+          [ -n "$inverso" ] && nota "- ℹ️ Nombre del servidor según su IP: $inverso"
           VERIFICAR=yes; [ "$FTP_VERIFICAR_CERT" = "no" ] && VERIFICAR=no
           AJUSTES="set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate $VERIFICAR; set ftp:passive-mode true; set net:timeout 30; set net:max-retries 2; set cmd:fail-exit true"
           if ! timeout 90 lftp -c "$AJUSTES; open --env-password -u \"$FTP_USUARIO\" -p $FTP_PORT \"$FTP_HOST\"; cls -1a" < /dev/null > listado.txt 2> error.txt; then
