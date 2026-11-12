@@ -2,13 +2,16 @@
 declare(strict_types=1);
 
 /**
- * Cliente mínimo de la API de DataForSEO (v3) para el estudio de keywords y el seguimiento de posiciones.
- * Credenciales: variables de entorno DATAFORSEO_LOGIN y DATAFORSEO_PASSWORD (nunca en el repositorio).
+ * Cliente mínimo de la API de DataForSEO (v3): estudio de keywords, posiciones y empresas para el directorio.
+ * Credenciales: variables de entorno DATAFORSEO_LOGIN y DATAFORSEO_PASSWORD (nunca en el repositorio). En el
+ * entorno de Claude las añade el proxy de red, así que las variables pueden faltar.
  *
  *   php scripts/dataforseo.php volumen  docs/keywords/semillas.txt [es|ca|en] > docs/keywords/volumen.csv
  *   php scripts/dataforseo.php ideas    "descalcificador,osmosis inversa" [es]  > docs/keywords/ideas.csv
  *   php scripts/dataforseo.php serp     "descalcificador barcelona" [es]       > docs/keywords/serp-x.csv
  *   php scripts/dataforseo.php saldo
+ *   php scripts/dataforseo.php categorias "water"                    # categorías de Google Maps que contienen el texto
+ *   php scripts/dataforseo.php empresas 50000 > docs/empresas-candidatas.csv   # candidatas en ciudades de 50.000+ hab.
  *
  * Mercado: España (location_code 2724). Cada llamada muestra su coste en la salida de error.
  */
@@ -69,6 +72,20 @@ try {
             csv(['keyword', 'posicion', 'dominio', 'url', 'titulo'], $filas);
             break;
 
+        case 'categorias':
+            $r = llamar('business_data/business_listings/categories', null);
+            foreach ($r['tasks'][0]['result'] ?? [] as $c) {
+                $nombre = is_array($c) ? ($c['category_name'] ?? $c['category'] ?? '') : (string) $c;
+                if (stripos($nombre, (string) ($argv[2] ?? '')) !== false) {
+                    fwrite(STDOUT, $nombre . "\n");
+                }
+            }
+            break;
+
+        case 'empresas':
+            empresas((int) ($argv[2] ?? 50000));
+            break;
+
         case 'saldo':
             $r = llamar('appendix/user_data', null);
             $d = $r['tasks'][0]['result'][0] ?? [];
@@ -86,11 +103,9 @@ try {
 
 function llamar(string $endpoint, ?array $cuerpo): array
 {
-    $login = getenv('DATAFORSEO_LOGIN') ?: '';
-    $clave = getenv('DATAFORSEO_PASSWORD') ?: '';
-    if ($login === '' || $clave === '') {
-        throw new RuntimeException('Faltan las variables de entorno DATAFORSEO_LOGIN y DATAFORSEO_PASSWORD.');
-    }
+    // Sin variables, se envía un valor de relleno: en el entorno de Claude el proxy pone la credencial real.
+    $login = getenv('DATAFORSEO_LOGIN') ?: 'credencial-del-proxy';
+    $clave = getenv('DATAFORSEO_PASSWORD') ?: 'credencial-del-proxy';
     $ch = curl_init(API . $endpoint);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -139,4 +154,69 @@ function csv(array $cabecera, array $filas): void
         fputcsv($out, $f, ';', '"', '');
     }
     fclose($out);
+}
+
+/**
+ * Empresas candidatas para el directorio (fichas «auto») en las ciudades grandes de las provincias objetivo.
+ * Criterio pedido: ni las más conocidas ni las peores, algo intermedio. Por ciudad: valoración >= 4 con al menos
+ * 5 opiniones, se saltan las 2 con más opiniones y se toman las 3 siguientes. Salida para revisar a mano y,
+ * después, pasar a data/empresas.csv.
+ */
+function empresas(int $poblacionMinima): void
+{
+    $categorias = ['water_softening_equipment_supplier', 'water_treatment_supplier', 'water_purification_company', 'water_filter_supplier'];
+    $provincias = ['08', '17', '25', '43', '29', '03', '12', '46', '07'];
+    $municipios = [];
+    $f = fopen(dirname(__DIR__) . '/data/municipios.csv', 'r');
+    $cab = fgetcsv($f, 0, ';', '"', '');
+    while (($fila = fgetcsv($f, 0, ';', '"', '')) !== false) {
+        $m = array_combine($cab, $fila);
+        $municipios[$m['ine']] = $m;
+    }
+    $ciudades = array_filter($municipios, fn ($m) => in_array($m['provincia'], $provincias, true) && (int) $m['poblacion'] >= $poblacionMinima && $m['lat'] !== '');
+    $vistas = [];
+    $filas = [];
+    foreach ($ciudades as $c) {
+        $r = llamar('business_data/business_listings/search/live', [[
+            'categories' => $categorias,
+            'location_coordinate' => sprintf('%s,%s,8', $c['lat'], $c['lon']),
+            'filters' => [['rating.votes_count', '>=', 5]],
+            'order_by' => ['rating.votes_count,desc'],
+            'limit' => 30,
+        ]]);
+        $items = $r['tasks'][0]['result'][0]['items'] ?? [];
+        $elegidas = 0;
+        foreach (array_slice($items, 2) as $i) {
+            $id = (string) ($i['place_id'] ?? $i['cid'] ?? $i['title']);
+            if (isset($vistas[$id]) || ($i['rating']['value'] ?? 0) < 4) {
+                continue;
+            }
+            $vistas[$id] = true;
+            $muni = municipioMasCercano($municipios, (float) ($i['latitude'] ?? $c['lat']), (float) ($i['longitude'] ?? $c['lon']), $c['provincia']);
+            $filas[] = [
+                $i['title'] ?? '', $muni['ine'], $muni['nombre'], $c['nombre'], $i['category'] ?? '', implode(',', $i['additional_categories'] ?? []),
+                $i['rating']['value'] ?? '', $i['rating']['votes_count'] ?? '', $i['phone'] ?? '', $i['url'] ?? '', $i['address'] ?? '',
+            ];
+            if (++$elegidas >= 3) {
+                break;
+            }
+        }
+    }
+    csv(['nombre', 'municipio_ine', 'municipio', 'ciudad_buscada', 'categoria', 'otras_categorias', 'valoracion', 'opiniones', 'telefono', 'web', 'direccion'], $filas);
+}
+
+function municipioMasCercano(array $municipios, float $lat, float $lon, string $provincia): array
+{
+    $mejor = null;
+    $distancia = INF;
+    foreach ($municipios as $m) {
+        if ($m['provincia'] !== $provincia || $m['lat'] === '') {
+            continue;
+        }
+        $d = ($m['lat'] - $lat) ** 2 + (($m['lon'] - $lon) * cos(deg2rad($lat))) ** 2;
+        if ($d < $distancia) {
+            [$mejor, $distancia] = [$m, $d];
+        }
+    }
+    return $mejor;
 }
