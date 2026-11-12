@@ -278,10 +278,13 @@ final class Directorio
                 continue;
             }
             $insertar->execute([
-                'nombre' => $e['nombre'], 'razon_social' => $e['razon_social'] ?? '', 'email' => $e['email'] ?? '', 'ahora' => Db::ahora(),
+                'nombre' => strip_tags($e['nombre']), 'razon_social' => strip_tags($e['razon_social'] ?? ''),
+                'email' => filter_var($e['email'] ?? '', FILTER_VALIDATE_EMAIL) ?: '', 'ahora' => Db::ahora(),
                 'slug' => $e['slug'], 'municipio_ine' => $e['municipio_ine'],
                 'servicios' => json_encode(array_values(array_intersect(array_keys($this->servicios), explode(',', $e['servicios'])))),
-                'descripcion' => $e['descripcion'] ?? '', 'web' => $e['web'] ?? '', 'telefono' => $e['telefono'] ?? '',
+                'descripcion' => strip_tags($e['descripcion'] ?? ''),
+                'web' => preg_match('#^https?://[^\s"<>]+$#i', $e['web'] ?? '') ? $e['web'] : '',
+                'telefono' => (string) preg_replace('/[^\d+]/', '', $e['telefono'] ?? ''),
                 'radio_km' => in_array((int) ($e['radio_km'] ?? 25), self::RADIOS, true) ? (int) $e['radio_km'] : 25,
             ]);
             $nuevas++;

@@ -220,6 +220,7 @@ final class Empresas
     private function editar(): string
     {
         Http::cabeceras(panel: true);
+        header('Referrer-Policy: no-referrer'); // el enlace lleva el token: que no salga en el Referer
         $token = (string) ($_POST['t'] ?? $_GET['t'] ?? '');
         $datosToken = $this->app->firma()->verificar($token, time());
         $empresa = ($datosToken['a'] ?? '') === 'editar_empresa' ? $this->directorio->porId((int) $datosToken['e']) : null;
