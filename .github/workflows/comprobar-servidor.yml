@@ -104,3 +104,17 @@ jobs:
             nota "- ❌ https://$DOMINIO no responde o el certificado no es válido"
             exit 1
           fi
+
+      - name: Acceso al SINAC desde GitHub
+        if: always()
+        run: |
+          nota() { echo "$1"; echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+          nota "## SINAC"
+          inicio=$(date +%s)
+          redes=$(curl -s -m 60 https://sinac.sanidad.gob.es/CiudadanoWeb/ciudadano/informacionRedes.do --data codMunicipio=8015 | grep -c eleccionRedDistribucion || true)
+          if [ "$redes" -gt 0 ]; then
+            nota "- ✅ El SINAC responde desde GitHub ($redes redes de Badalona en $(( $(date +%s) - inicio )) s)"
+          else
+            nota "- ❌ El SINAC no responde desde GitHub: los datos del agua no se podrán actualizar solos"
+            exit 1
+          fi
