@@ -77,7 +77,7 @@ jobs:
             nota "- ❌ No se puede entrar por FTP cifrado. Respuesta del servidor:"
             head -5 error.txt | while IFS= read -r l; do nota "    $l"; done
             if grep -qi certific error.txt; then
-              nota "- 👉 El certificado no corresponde a FTP_HOST: pon en FTP_HOST el «Nombre de host» del servidor (cPanel → Información general → Información del servidor), no aguasincal.es ni ftp.aguasincal.es."
+              nota "- 👉 El certificado no corresponde a FTP_HOST: pon en FTP_HOST el nombre del servidor de Raiola${inverso:+ ($inverso)}, sin ftp. delante ni :21 detrás."
             elif grep -qiE '530|login|incorrect' error.txt; then
               nota "- 👉 Usuario o contraseña FTP incorrectos. El usuario suele ser completo: deploy@aguasincal.es"
             fi

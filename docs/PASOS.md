@@ -85,7 +85,7 @@ Los cambios se aplican al abrir una sesión nueva.
    - Contraseña: usa el generador y guárdala; va a GitHub.
    - **Directorio: la carpeta del dominio** (`/home/TUUSUARIO/aguasincal.es`). Así la cuenta solo ve esta web, y puede crear `aguasincal-app` y `aguasincal-data` junto a `public_html`.
    - Cuota: ilimitada.
-   - **Servidor FTP:** en cPanel → «Información general» (columna derecha) → «Información del servidor» → **Nombre de host**. Usa ese nombre y no `ftp.aguasincal.es`: el certificado de cifrado solo es válido para el nombre del servidor.
+   - **Servidor FTP:** el nombre del servidor de Raiola, del tipo `comXXXX.raiolanetworks.es` (aguasincal.es está en `com1014.raiolanetworks.es`). No uses `ftp.aguasincal.es` ni la IP: el certificado de cifrado solo es válido para `*.raiolanetworks.es`. La comprobación del Paso 4.3 te lo muestra si no lo sabes.
 4. **Correo (ya tienes info@).** En **Email Deliverability**, deja SPF y DKIM en verde (botón «Reparar» si sale en rojo).
 5. **Menos spam en info@:**
    - **Dirección predeterminada** (Default Address) → «Descartar con un error al remitente». Si ahora recoge todo lo que llega a direcciones que no existen, aquí entra mucho spam.
@@ -108,7 +108,7 @@ Abre **https://github.com/EdgarPGitHub/aguasincal/settings/secrets/actions** →
 
 | Name | Secret |
 |---|---|
-| `FTP_HOST` | Nombre de host del servidor (Paso 3.3), no `ftp.aguasincal.es` |
+| `FTP_HOST` | `com1014.raiolanetworks.es` (Paso 3.3) |
 | `FTP_USUARIO` | `deploy@aguasincal.es` |
 | `FTP_CLAVE` | Contraseña de esa cuenta FTP |
 | `SMTP_PASS` | Contraseña del buzón `info@aguasincal.es` |
