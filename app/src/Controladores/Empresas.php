@@ -60,12 +60,14 @@ final class Empresas
 
     private function indice(): string
     {
-        $q = trim((string) ($_GET['q'] ?? ''));
+        $q = self::texto($_GET, 'q');
         $resultados = [];
         if ($q !== '') {
             $resultados = $this->app->municipios()->buscar($q, null, 12);
-            if (count($resultados) === 1 || ($resultados && \AguaSinCal\Municipios::normalizar($resultados[0]['nombre']) === \AguaSinCal\Municipios::normalizar($q))) {
-                Http::redirigir($this->rutaMunicipio($resultados[0]));
+            // Solo se salta la lista si no hay duda (hay municipios con el mismo nombre en provincias distintas).
+            $exactos = array_values(array_filter($resultados, fn ($m) => \AguaSinCal\Municipios::normalizar($m['nombre']) === \AguaSinCal\Municipios::normalizar($q)));
+            if (count($resultados) === 1 || count($exactos) === 1) {
+                Http::redirigir($this->rutaMunicipio(count($resultados) === 1 ? $resultados[0] : $exactos[0]));
             }
         }
         return $this->render('pages/empresas.twig', [
@@ -84,7 +86,7 @@ final class Empresas
         if ($m === null) {
             return $this->noEncontrada();
         }
-        $servicio = (string) ($_GET['servicio'] ?? '');
+        $servicio = self::texto($_GET, 'servicio');
         $servicio = isset($this->app->servicios()[$servicio]) ? $servicio : null;
         $empresas = $this->directorio->para($m, $this->hoy(), $servicio);
         $ruta = $this->rutaMunicipio($m);
@@ -158,7 +160,7 @@ final class Empresas
         $vars = ['datos' => ['servicios' => [], 'radio_km' => 25, 'provincia' => ''], 'errores' => [], 'sugerencias' => [], 'hecho' => false];
         $ahora = time();
         if (Http::esPost()) {
-            if (trim((string) ($_POST[self::CAMPO_TRAMPA] ?? '')) !== '') {
+            if (self::texto($_POST, self::CAMPO_TRAMPA) !== '') {
                 return $this->renderAlta(['hecho' => true] + $vars, $ahora);
             }
             [$datos, $errores, $sugerencias] = $this->directorio->validarFicha($_POST, true);
@@ -166,7 +168,12 @@ final class Empresas
                 $errores['acepto'] = 'Para publicar la ficha necesitamos que aceptes las condiciones.';
             }
             $errores += $this->comprobarEnvio($ahora, 'alta-empresa', self::MAX_ALTAS_IP_DIA, 86400);
+            $claveEmail = 'email-empresa:' . hash('sha256', mb_strtolower($datos['email']));
+            if (!$errores && $this->app->limitador()->superado($claveEmail, 3, 86400, $ahora)) {
+                $errores['general'] = 'Ya hemos enviado varios emails a esa dirección hoy. Inténtalo mañana o escríbenos.';
+            }
             if (!$errores) {
+                $this->app->limitador()->registrar($claveEmail, $ahora);
                 $id = $this->directorio->alta($datos);
                 $this->app->limitador()->registrar('alta-empresa:' . Http::ipHash($this->app->clave()), $ahora);
                 $empresa = $this->directorio->porId($id);
@@ -183,27 +190,34 @@ final class Empresas
     /** Pedir el enlace de edición. Si la ficha no tiene ese email, lo decide el titular (reclamación). */
     private function acceso(): string
     {
-        $empresa = isset($_REQUEST['empresa']) ? $this->directorio->publicada((string) $_REQUEST['empresa']) : null;
+        $slug = self::texto($_REQUEST, 'empresa');
+        $empresa = $slug !== '' ? $this->directorio->publicada($slug) : null;
         $vars = ['empresa' => $empresa, 'email' => '', 'errores' => [], 'hecho' => false];
         $ahora = time();
         if (Http::esPost()) {
-            $email = trim((string) ($_POST['email'] ?? ''));
+            $email = self::texto($_POST, 'email');
             $vars['email'] = $email;
             $errores = [];
-            if (trim((string) ($_POST[self::CAMPO_TRAMPA] ?? '')) !== '') {
+            if (self::texto($_POST, self::CAMPO_TRAMPA) !== '') {
                 return $this->renderAcceso(['hecho' => true] + $vars, $ahora);
             }
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $errores['email'] = 'Escribe un email válido.';
             }
             $errores += $this->comprobarEnvio($ahora, 'acceso-empresa', 5, 3600);
+            $claveEmail = 'email-empresa:' . hash('sha256', mb_strtolower($email));
+            if (!$errores && $this->app->limitador()->superado($claveEmail, 3, 86400, $ahora)) {
+                // Misma respuesta que si se enviara: no se revela nada.
+                return $this->renderAcceso(['hecho' => true] + $vars, $ahora);
+            }
             if (!$errores) {
                 $this->app->limitador()->registrar('acceso-empresa:' . Http::ipHash($this->app->clave()), $ahora);
+                $this->app->limitador()->registrar($claveEmail, $ahora);
                 $avisos = $this->app->notificaciones();
                 $suyas = $this->directorio->porEmail($email);
                 if ($empresa !== null && !in_array($empresa['id'], array_column($suyas, 'id'), true)) {
                     // Reclamación de una ficha que no tiene ese email: la revisa el titular.
-                    $avisos->avisarTitularEmpresa($empresa, 'reclamacion', $ahora, ['email' => $email, 'mensaje' => mb_substr(trim((string) ($_POST['mensaje'] ?? '')), 0, 500)]);
+                    $avisos->avisarTitularEmpresa($empresa, 'reclamacion', $ahora, ['email' => $email, 'mensaje' => mb_substr(self::texto($_POST, 'mensaje'), 0, 500)]);
                 } else {
                     foreach ($suyas as $e) {
                         $avisos->enlaceEdicionEmpresa($e, $ahora, false);
@@ -221,9 +235,13 @@ final class Empresas
     {
         Http::cabeceras(panel: true);
         header('Referrer-Policy: no-referrer'); // el enlace lleva el token: que no salga en el Referer
-        $token = (string) ($_POST['t'] ?? $_GET['t'] ?? '');
+        $token = self::texto($_POST, 't') ?: self::texto($_GET, 't');
         $datosToken = $this->app->firma()->verificar($token, time());
-        $empresa = ($datosToken['a'] ?? '') === 'editar_empresa' ? $this->directorio->porId((int) $datosToken['e']) : null;
+        $empresa = ($datosToken['a'] ?? '') === 'editar_empresa' ? $this->directorio->porId((int) ($datosToken['e'] ?? 0)) : null;
+        // El enlace solo vale para el email al que se envió: si la ficha cambia de email, deja de valer.
+        if ($empresa !== null && ($datosToken['h'] ?? '') !== Directorio::huellaEmail((string) $empresa['email'])) {
+            $empresa = null;
+        }
         if ($empresa === null) {
             http_response_code(403);
             return $this->render('pages/empresa-acceso.twig', [
@@ -231,11 +249,6 @@ final class Empresas
                 'empresa' => null, 'email' => '', 'hecho' => false, 'token' => '',
                 'errores' => ['general' => 'El enlace no es válido o ha caducado. Pide uno nuevo.'],
             ]);
-        }
-        // Abrir el enlace demuestra que el email es suyo.
-        if (!$empresa['verificada']) {
-            $this->directorio->marcarVerificada((int) $empresa['id']);
-            $empresa['verificada'] = 1;
         }
         $vars = [
             'pagina' => $this->pagina('Editar la ficha de ' . $empresa['nombre_comercial'], '/empresas/editar/', '', false, []),
@@ -253,6 +266,10 @@ final class Empresas
             [$datos, $errores, $sugerencias] = $this->directorio->validarFicha($_POST + ['email' => $empresa['email']], false);
             if (!$errores) {
                 $this->directorio->actualizarFicha((int) $empresa['id'], $datos);
+                // Guardar con el enlace recibido demuestra que el email es suyo (abrirlo no basta: los antivirus abren enlaces solos).
+                if (!$empresa['verificada']) {
+                    $this->directorio->marcarVerificada((int) $empresa['id']);
+                }
                 $this->app->notificaciones()->avisarTitularEmpresa($this->directorio->porId((int) $empresa['id']), 'cambios', time());
                 $vars['hecho'] = true;
                 $vars['empresa'] = $this->directorio->porId((int) $empresa['id']);
@@ -271,14 +288,15 @@ final class Empresas
         $urls = [];
         $hoy = $this->hoy();
         $municipiosVistos = [];
-        foreach ($this->directorio->publicadas() as $e) {
+        $publicadas = $this->directorio->publicadas();
+        foreach ($publicadas as $e) {
             if (Directorio::indexable($e)) {
                 $urls[] = ['/empresa/' . $e['slug'] . '/', substr((string) ($e['actualizado'] ?? $e['creado']), 0, 10)];
             }
             // Municipios dentro del radio de alguna empresa: solo los que llegan al mínimo de empresas.
             if ($e['base'] !== null && !isset($municipiosVistos[$e['base']['ine']])) {
                 $municipiosVistos[$e['base']['ine']] = true;
-                if (count($this->directorio->para($e['base'], $hoy)) >= Directorio::MIN_INDEXABLE) {
+                if (count($this->directorio->para($e['base'], $hoy, null, $publicadas)) >= Directorio::MIN_INDEXABLE) {
                     $urls[] = [$this->rutaMunicipio($e['base']), null];
                 }
             }
@@ -292,6 +310,13 @@ final class Empresas
     }
 
     // ---------------------------------------------------------------------------------------------- apoyo
+
+    /** Parámetro de texto (un campo enviado como lista cuenta como vacío). */
+    private static function texto(array $origen, string $clave): string
+    {
+        $v = $origen[$clave] ?? '';
+        return is_string($v) ? trim($v) : '';
+    }
 
     /** @return array<string, string> errores del token del formulario y del límite por IP */
     private function comprobarEnvio(int $ahora, string $accion, int $maximo, int $ventana): array

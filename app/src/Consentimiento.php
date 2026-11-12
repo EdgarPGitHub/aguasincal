@@ -11,9 +11,13 @@ final class Consentimiento
 {
     public const VERSION = '2026-10-v1';
 
-    public static function version(string $modo): string
+    /**
+     * Versión del texto aceptado. Con profesional, incluye su id: si cambia quién recibirá los datos entre
+     * que se muestra el texto y se envía el formulario, la versión ya no coincide y se vuelve a pedir.
+     */
+    public static function version(string $modo, ?array $profesional = null): string
     {
-        return self::VERSION . '-' . $modo;
+        return self::VERSION . '-' . $modo . ($modo === 'activo' && isset($profesional['id']) ? '-p' . (int) $profesional['id'] : '');
     }
 
     public static function texto(string $modo, ?array $profesional, string $nombreSitio): string

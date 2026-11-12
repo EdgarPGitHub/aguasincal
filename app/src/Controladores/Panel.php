@@ -58,7 +58,7 @@ final class Panel
                 echo $this->cobertura();
                 break;
             case 'profesionales':
-                $filtro = isset(Directorio::FICHAS[$_GET['ficha'] ?? '']) ? $_GET['ficha'] : null;
+                $filtro = is_string($_GET['ficha'] ?? null) && isset(Directorio::FICHAS[$_GET['ficha']]) ? $_GET['ficha'] : null;
                 $todas = array_map(fn ($p) => $this->app->directorio()->completar($p), $this->app->profesionales()->todos());
                 echo $this->render('panel/profesionales.twig', [
                     'profesionales' => $filtro ? array_values(array_filter($todas, fn ($p) => $p['ficha'] === $filtro)) : $todas,
@@ -397,15 +397,21 @@ final class Panel
         $datos['provincia'] ??= $profesional['base']['provincia'] ?? '';
         if (Http::esPost()) {
             [$internos, $errores] = Profesionales::validar($_POST);
+            $texto = fn (string $clave) => is_string($_POST[$clave] ?? null) ? $_POST[$clave] : '';
+            $fecha = \DateTimeImmutable::createFromFormat('!Y-m-d', $texto('destacada_hasta'));
             $admin = [
-                'origen' => isset(Directorio::ORIGENES[$_POST['origen'] ?? '']) ? $_POST['origen'] : 'propia',
-                'ficha' => isset(Directorio::FICHAS[$_POST['ficha'] ?? '']) ? $_POST['ficha'] : 'oculta',
-                'destacada_hasta' => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($_POST['destacada_hasta'] ?? '')) ? $_POST['destacada_hasta'] : null,
+                'origen' => isset(Directorio::ORIGENES[$texto('origen')]) ? $texto('origen') : 'propia',
+                'ficha' => isset(Directorio::FICHAS[$texto('ficha')]) ? $texto('ficha') : 'oculta',
+                'destacada_hasta' => $fecha && $fecha->format('Y-m-d') === $texto('destacada_hasta') ? $texto('destacada_hasta') : null,
                 'prioridad' => max(-10, min(10, (int) ($_POST['prioridad'] ?? 0))),
                 'verificada' => !empty($_POST['verificada']) ? 1 : 0,
             ];
+            // Un email nuevo no está confirmado: la empresa tendrá que guardar la ficha con su enlace.
+            if ($profesional !== null && mb_strtolower(trim((string) $profesional['email'])) !== mb_strtolower(trim($texto('email')))) {
+                $admin['verificada'] = 0;
+            }
             // La ficha pública solo se valida si se publica o si se ha rellenado el municipio.
-            $conFicha = $admin['ficha'] !== 'oculta' || trim((string) ($_POST['municipio'] ?? '')) !== '' || !empty($_POST['municipio_ine']);
+            $conFicha = $admin['ficha'] !== 'oculta' || trim($texto('municipio')) !== '' || $texto('municipio_ine') !== '';
             $publicos = null;
             if ($conFicha) {
                 [$publicos, $erroresFicha, $sugerencias] = $directorio->validarFicha($_POST, false);

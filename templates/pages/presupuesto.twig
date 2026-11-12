@@ -5,7 +5,10 @@
 {% if paso == 'gracias' %}
   <div class="tarjeta resultado">
     <h1>¡Solicitud recibida!</h1>
-    {% if modo == 'activo' %}
+    {% if modo == 'empresa' %}
+      <p class="entradilla">Hemos recibido tu solicitud y se la haremos llegar a la empresa que has elegido. Normalmente contestan en uno o dos días laborables.</p>
+      <p>Si nos dejaste tu email, te hemos enviado una confirmación.</p>
+    {% elseif modo == 'activo' %}
       <p class="entradilla">Hemos pasado tu solicitud a revisión. Te llamará un profesional verificado de tu zona, normalmente en menos de 24 horas laborables.</p>
       <p>Si nos dejaste tu email, te hemos enviado una confirmación.</p>
     {% else %}
@@ -56,6 +59,9 @@
 {% else %}
   <header class="cabecera-pagina">
     <h1>{{ servicios[datos.servicio].formulario }} en {{ provincia_nombre }}</h1>
+    {% if empresa_no_disponible ?? false %}
+      <p class="aviso aviso--espera">La empresa que elegiste no ofrece este servicio o ya no está disponible, así que te buscamos otro profesional.</p>
+    {% endif %}
     {% if empresa_elegida %}
       <p class="aviso aviso--ok">Vas a pedir presupuesto a <b>{{ profesional.nombre_comercial }}</b>. Déjanos tus datos y se los haremos llegar.</p>
     {% elseif modo == 'activo' %}

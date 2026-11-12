@@ -107,6 +107,10 @@ final class Accion
         }
         $id = (int) $empresa['id'];
         $avisos = $this->app->notificaciones();
+        // Los enlaces de revisión solo sirven mientras el alta está pendiente (no reabren fichas ocultadas después).
+        if (in_array($datos['a'], ['publicar_empresa', 'descartar_empresa'], true) && $empresa['ficha'] !== 'pendiente') {
+            return $this->render($vars + ['error' => 'Esta ficha ya no está pendiente (ahora: ' . $empresa['ficha'] . '). Gestiónala desde el panel.']);
+        }
         switch ($datos['a']) {
             case 'publicar_empresa':
                 $directorio->cambiarFicha($id, 'publicada');

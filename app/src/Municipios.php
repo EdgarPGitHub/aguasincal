@@ -96,7 +96,8 @@ final class Municipios
             if ($provincia !== null && $m['provincia'] !== $provincia) {
                 continue;
             }
-            $nivel = null;
+            // El nombre completo ("Alacant/Alicante") también vale: es el que se rellena al editar una ficha.
+            $nivel = self::normalizar($m['nombre']) === $q ? 0 : null;
             foreach (explode('/', $m['nombre']) as $variante) {
                 $n = self::normalizar($variante);
                 $sinArticulo = (string) preg_replace("/^(el|la|los|las|l'|els|les|a|o|es|sa|ses) ?/", '', $n);

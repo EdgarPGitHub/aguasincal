@@ -9,8 +9,9 @@ use PDO;
  * Directorio público de empresas. Cada empresa es una fila de "profesionales" con ficha pública:
  * la misma ficha sirve para el directorio y para recibir leads.
  *
- * Orden en un municipio: primero las destacadas vigentes (de más cerca a más lejos), luego el resto
- * (prioridad interna, verificadas y distancia). Cada empresa aparece en los municipios dentro de su radio.
+ * Orden en un municipio: primero las destacadas vigentes y luego el resto; dentro de cada grupo, de más cerca
+ * a más lejos (la prioridad interna del panel, 0 por defecto, puede subir o bajar una ficha en su grupo).
+ * Cada empresa aparece en los municipios dentro de su radio.
  */
 final class Directorio
 {
@@ -62,10 +63,10 @@ final class Directorio
      * Empresas que trabajan en el municipio $m, ordenadas para mostrar.
      * @return list<array> cada una con 'distancia' (km) y 'destacada' (bool)
      */
-    public function para(array $m, string $hoy, ?string $servicio = null): array
+    public function para(array $m, string $hoy, ?string $servicio = null, ?array $publicadas = null): array
     {
         $lista = [];
-        foreach ($this->publicadas() as $e) {
+        foreach ($publicadas ?? $this->publicadas() as $e) {
             if ($e['base'] === null || ($servicio !== null && !in_array($servicio, $e['servicios'], true))) {
                 continue;
             }
@@ -77,11 +78,8 @@ final class Directorio
             $e['destacada'] = self::destacada($e, $hoy);
             $lista[] = $e;
         }
-        usort($lista, fn ($a, $b) => [
-            $a['destacada'] ? 0 : 1, -$a['prioridad'], $a['destacada'] ? 0 : -$a['verificada'], $a['distancia'], $a['nombre_comercial'],
-        ] <=> [
-            $b['destacada'] ? 0 : 1, -$b['prioridad'], $b['destacada'] ? 0 : -$b['verificada'], $b['distancia'], $b['nombre_comercial'],
-        ]);
+        usort($lista, fn ($a, $b) => [$a['destacada'] ? 0 : 1, -$a['prioridad'], $a['distancia'], $a['nombre_comercial']]
+            <=> [$b['destacada'] ? 0 : 1, -$b['prioridad'], $b['distancia'], $b['nombre_comercial']]);
         return $lista;
     }
 
@@ -125,15 +123,18 @@ final class Directorio
      */
     public function validarFicha(array $in, bool $emailObligatorio): array
     {
-        $servicios = array_values(array_intersect(array_keys($this->servicios), (array) ($in['servicios'] ?? [])));
+        // Solo texto: un parámetro enviado como lista (campo[]=…) cuenta como vacío.
+        $marcados = is_array($in['servicios'] ?? null) ? array_filter($in['servicios'], 'is_string') : [];
+        $in = array_map(fn ($v) => is_array($v) ? '' : $v, $in);
+        $servicios = array_values(array_intersect(array_keys($this->servicios), $marcados));
         $web = trim((string) ($in['web'] ?? ''));
         if ($web !== '' && !preg_match('#^https?://#i', $web)) {
             $web = 'https://' . $web;
         }
         $descripcion = trim((string) preg_replace('/[ \t]+/', ' ', strip_tags((string) ($in['descripcion'] ?? ''))));
         $datos = [
-            'nombre_comercial' => trim(strip_tags((string) ($in['nombre_comercial'] ?? ''))),
-            'razon_social' => trim(strip_tags((string) ($in['razon_social'] ?? ''))),
+            'nombre_comercial' => self::linea((string) ($in['nombre_comercial'] ?? '')),
+            'razon_social' => self::linea((string) ($in['razon_social'] ?? '')),
             'email' => trim((string) ($in['email'] ?? '')),
             'telefono' => preg_replace('/[^\d+]/', '', (string) ($in['telefono'] ?? '')),
             'web' => $web,
@@ -151,6 +152,11 @@ final class Directorio
         }
         if (mb_strlen($datos['razon_social']) > 120) {
             $errores['razon_social'] = 'La razón social es demasiado larga.';
+        }
+        foreach (['nombre_comercial', 'razon_social'] as $campo) {
+            if (preg_match('#https?:|www\.|@#i', $datos[$campo])) {
+                $errores[$campo] = 'Sin enlaces ni emails en el nombre.';
+            }
         }
         if (($emailObligatorio || $datos['email'] !== '') && !filter_var($datos['email'], FILTER_VALIDATE_EMAIL)) {
             $errores['email'] = 'Escribe un email válido: ahí te llegarán los clientes y el enlace para editar la ficha.';
@@ -238,9 +244,16 @@ final class Directorio
         $this->db->prepare('UPDATE profesionales SET verificada = 1, actualizado = ? WHERE id = ?')->execute([Db::ahora(), $id]);
     }
 
+    /** Nuevo email: hasta que lo confirme (guardando con su enlace), la ficha deja de estar verificada. */
     public function asignarEmail(int $id, string $email): void
     {
-        $this->db->prepare('UPDATE profesionales SET email = ?, actualizado = ? WHERE id = ?')->execute([$email, Db::ahora(), $id]);
+        $this->db->prepare('UPDATE profesionales SET email = ?, verificada = 0, actualizado = ? WHERE id = ?')->execute([$email, Db::ahora(), $id]);
+    }
+
+    /** Huella del email para los enlaces de edición: si el email cambia, los enlaces anteriores dejan de valer. */
+    public static function huellaEmail(string $email): string
+    {
+        return substr(hash('sha256', mb_strtolower(trim($email))), 0, 16);
     }
 
     /**
@@ -260,40 +273,62 @@ final class Directorio
             return 0;
         }
         $f = fopen($archivo, 'r');
-        $cab = fgetcsv($f, 0, ';', '"', '');
+        $cab = array_map(fn ($c) => trim((string) $c, "\xEF\xBB\xBF \t"), fgetcsv($f, 0, ';', '"', '') ?: []);
+        $faltan = array_diff(['slug', 'nombre', 'municipio_ine', 'servicios'], $cab);
+        if ($faltan) {
+            fclose($f);
+            throw new \RuntimeException('Faltan columnas en empresas.csv: ' . implode(', ', $faltan));
+        }
         $nuevas = 0;
         $existe = $this->db->prepare('SELECT 1 FROM profesionales WHERE slug = ?');
         $insertar = $this->db->prepare("INSERT INTO profesionales (nombre_comercial, razon_social, email, whatsapp, precio_lead, notas, activo, creado,
                 slug, municipio_ine, servicios, descripcion, web, telefono, radio_km, origen, ficha, verificada, actualizado)
             VALUES (:nombre, :razon_social, :email, '', 0, '', 1, :ahora, :slug, :municipio_ine, :servicios, :descripcion, :web, :telefono,
                 :radio_km, 'auto', 'publicada', 0, :ahora)");
-        $this->db->beginTransaction();
-        while (($fila = fgetcsv($f, 0, ';', '"', '')) !== false) {
-            if (count($fila) !== count($cab)) {
-                continue;
+        // Si algo falla, se deshace todo: nunca debe quedar una transacción abierta que se lleve por delante
+        // lo que guarde después la misma petición (un lead, un alta).
+        $this->db->exec('BEGIN IMMEDIATE');
+        try {
+            while (($fila = fgetcsv($f, 0, ';', '"', '')) !== false) {
+                if (count($fila) !== count($cab)) {
+                    continue;
+                }
+                $e = array_combine($cab, array_map('trim', $fila));
+                if (!preg_match('/^[a-z0-9-]{1,90}$/', $e['slug']) || $this->municipios->obtener($e['municipio_ine']) === null) {
+                    continue;
+                }
+                $existe->execute([$e['slug']]);
+                if ($existe->fetchColumn()) {
+                    continue;
+                }
+                $insertar->execute([
+                    'nombre' => self::linea($e['nombre']), 'razon_social' => self::linea($e['razon_social'] ?? ''),
+                    'email' => filter_var($e['email'] ?? '', FILTER_VALIDATE_EMAIL) ?: '', 'ahora' => Db::ahora(),
+                    'slug' => $e['slug'], 'municipio_ine' => $e['municipio_ine'],
+                    'servicios' => json_encode(array_values(array_intersect(array_keys($this->servicios), explode(',', $e['servicios'])))),
+                    'descripcion' => strip_tags($e['descripcion'] ?? ''),
+                    'web' => preg_match('#^https?://[^\s"<>]+$#i', $e['web'] ?? '') ? $e['web'] : '',
+                    'telefono' => (string) preg_replace('/[^\d+]/', '', $e['telefono'] ?? ''),
+                    'radio_km' => in_array((int) ($e['radio_km'] ?? 25), self::RADIOS, true) ? (int) $e['radio_km'] : 25,
+                ]);
+                $nuevas++;
             }
-            $e = array_combine($cab, array_map('trim', $fila));
-            $existe->execute([$e['slug']]);
-            if ($e['slug'] === '' || $existe->fetchColumn() || $this->municipios->obtener($e['municipio_ine']) === null) {
-                continue;
-            }
-            $insertar->execute([
-                'nombre' => strip_tags($e['nombre']), 'razon_social' => strip_tags($e['razon_social'] ?? ''),
-                'email' => filter_var($e['email'] ?? '', FILTER_VALIDATE_EMAIL) ?: '', 'ahora' => Db::ahora(),
-                'slug' => $e['slug'], 'municipio_ine' => $e['municipio_ine'],
-                'servicios' => json_encode(array_values(array_intersect(array_keys($this->servicios), explode(',', $e['servicios'])))),
-                'descripcion' => strip_tags($e['descripcion'] ?? ''),
-                'web' => preg_match('#^https?://[^\s"<>]+$#i', $e['web'] ?? '') ? $e['web'] : '',
-                'telefono' => (string) preg_replace('/[^\d+]/', '', $e['telefono'] ?? ''),
-                'radio_km' => in_array((int) ($e['radio_km'] ?? 25), self::RADIOS, true) ? (int) $e['radio_km'] : 25,
-            ]);
-            $nuevas++;
+            $this->db->prepare("INSERT INTO ajustes (clave, valor) VALUES ('empresas_csv', ?) ON CONFLICT (clave) DO UPDATE SET valor = excluded.valor")
+                ->execute([$huella]);
+            $this->db->exec('COMMIT');
+        } catch (\Throwable $e) {
+            $this->db->exec('ROLLBACK');
+            throw $e;
+        } finally {
+            fclose($f);
         }
-        fclose($f);
-        $this->db->prepare("INSERT INTO ajustes (clave, valor) VALUES ('empresas_csv', ?) ON CONFLICT (clave) DO UPDATE SET valor = excluded.valor")
-            ->execute([$huella]);
-        $this->db->commit();
         return $nuevas;
+    }
+
+    /** Texto de una línea, sin etiquetas, saltos de línea ni caracteres de control. */
+    private static function linea(string $texto): string
+    {
+        return trim((string) preg_replace('/[\x00-\x1F\x7F]+/u', ' ', strip_tags($texto)));
     }
 
     /** Añade a la fila los datos derivados: servicios como lista y municipio base. */

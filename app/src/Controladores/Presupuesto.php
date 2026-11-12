@@ -31,7 +31,7 @@ final class Presupuesto
         }
         $q = $_GET;
         if (isset($q['ok'])) {
-            return $this->render('gracias', ['modo' => ($q['m'] ?? '') === 'activo' ? 'activo' : 'espera']);
+            return $this->render('gracias', ['modo' => in_array($q['m'] ?? '', ['activo', 'empresa'], true) ? $q['m'] : 'espera']);
         }
         if (isset($q['cambiar'])) {
             $datos = ['servicio' => (string) ($q['servicio'] ?? ''), 'cp' => '', 'tipo_cliente' => (string) ($q['tipo'] ?? 'particular')];
@@ -86,7 +86,7 @@ final class Presupuesto
         }
 
         $cobertura = $this->resolver($datos, $meta);
-        $version = Consentimiento::version($cobertura['modo']);
+        $version = Consentimiento::version($cobertura['modo'], $cobertura['profesional']);
         if (!$errores && ($in['consentimiento_version'] ?? '') !== $version) {
             $errores['acepto'] = 'La disponibilidad en tu zona ha cambiado. Lee el nuevo texto y vuelve a marcar la casilla.';
         }
@@ -113,7 +113,7 @@ final class Presupuesto
         $notificaciones->avisarTitular($lead, $ahora);
         $notificaciones->confirmarCliente($lead, $cobertura['profesional']);
 
-        Http::redirigir('/presupuesto/?ok=1&m=' . $cobertura['modo']);
+        Http::redirigir('/presupuesto/?ok=1&m=' . ($cobertura['empresa'] ? 'empresa' : $cobertura['modo']));
     }
 
     /**
@@ -123,11 +123,12 @@ final class Presupuesto
      */
     private function resolver(array $datos, array $meta): array
     {
+        $servicioRuta = Leads::servicioEfectivo($datos['servicio'], $datos['tipo_cliente']);
         $empresa = $meta['empresa'] !== '' ? $this->app->directorio()->publicada($meta['empresa']) : null;
-        if ($empresa !== null) {
+        // Solo si esa empresa ofrece el servicio pedido; si no, se busca profesional como siempre (y se avisa).
+        if ($empresa !== null && in_array($servicioRuta, $empresa['servicios'], true)) {
             return ['modo' => 'activo', 'profesional' => $empresa, 'empresa' => true];
         }
-        $servicioRuta = Leads::servicioEfectivo($datos['servicio'], $datos['tipo_cliente']);
         return $this->app->cobertura()->resolver($datos['provincia'], $servicioRuta) + ['empresa' => false];
     }
 
@@ -144,7 +145,8 @@ final class Presupuesto
             'empresa_elegida' => $cobertura['empresa'],
             'provincia_nombre' => $this->app->provincias()->nombre($datos['provincia']),
             'consentimiento' => Consentimiento::texto($cobertura['modo'], $cobertura['profesional'], $nombreSitio),
-            'consentimiento_version' => Consentimiento::version($cobertura['modo']),
+            'consentimiento_version' => Consentimiento::version($cobertura['modo'], $cobertura['profesional']),
+            'empresa_no_disponible' => $meta['empresa'] !== '' && !$cobertura['empresa'],
             'token' => $this->app->tokenFormulario()->emitir($ahora),
         ]);
     }
@@ -165,7 +167,7 @@ final class Presupuesto
             ? ($partes['scheme'] ?? 'https') . '://' . $partes['host'] . ($partes['path'] ?? '')
             : '';
         return [
-            'empresa' => preg_match('/^[a-z0-9-]{1,90}$/', (string) ($in['empresa'] ?? '')) ? (string) $in['empresa'] : '',
+            'empresa' => is_string($in['empresa'] ?? null) && preg_match('/^[a-z0-9-]{1,90}$/', $in['empresa']) ? $in['empresa'] : '',
             'pagina_origen' => Http::rutaInterna((string) ($in['origen'] ?? '')),
             'referrer' => mb_substr($referrer, 0, 300),
             'utm' => $utm,

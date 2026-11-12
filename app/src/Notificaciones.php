@@ -76,7 +76,10 @@ final class Notificaciones
         if (!filter_var($empresa['email'], FILTER_VALIDATE_EMAIL)) {
             return false;
         }
-        $token = $this->app->firma()->firmar(['a' => 'editar_empresa', 'e' => (int) $empresa['id']], $ahora + \AguaSinCal\Controladores\Empresas::CADUCIDAD_ENLACE_EDICION);
+        $token = $this->app->firma()->firmar(
+            ['a' => 'editar_empresa', 'e' => (int) $empresa['id'], 'h' => Directorio::huellaEmail((string) $empresa['email'])],
+            $ahora + \AguaSinCal\Controladores\Empresas::CADUCIDAD_ENLACE_EDICION,
+        );
         $texto = $this->app->twig()->render('correo/empresa-enlace.txt.twig', [
             'empresa' => $empresa,
             'alta' => $alta,

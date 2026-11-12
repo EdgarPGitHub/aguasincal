@@ -128,6 +128,64 @@ final class DirectorioTest extends TestCase
         unlink($csv);
     }
 
+    public function testUnCsvMalFormadoNoDejaTransaccionesAbiertas(): void
+    {
+        $app = $this->app();
+        $d = $app->directorio();
+        $csv = sys_get_temp_dir() . '/empresas-mal-' . bin2hex(random_bytes(3)) . '.csv';
+        file_put_contents($csv, "slug;nombre;municipio;servicios\nx;X;17079;descalcificadores\n");
+        try {
+            $d->importar($csv);
+            $this->fail('Debería avisar de las columnas que faltan');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('municipio_ine', $e->getMessage());
+        }
+        $this->assertFalse($app->db()->inTransaction());
+        // Lo que se guarde después en la misma petición se mantiene.
+        $id = $this->publicar($app);
+        $this->assertNotNull($d->porId($id));
+        unlink($csv);
+    }
+
+    public function testMunicipioBilingueSeGuardaConSuNombreCompleto(): void
+    {
+        $d = $this->app()->directorio();
+        [$datos, $errores] = $d->validarFicha($this->ficha(['municipio' => 'Alacant/Alicante', 'provincia' => '03']), true);
+        $this->assertSame([], $errores);
+        $this->assertSame('03014', $datos['municipio_ine']);
+    }
+
+    public function testNombreSinEnlacesNiSaltosDeLinea(): void
+    {
+        $d = $this->app()->directorio();
+        [$datos, $errores] = $d->validarFicha($this->ficha(['nombre_comercial' => "Aguas\n\nURGENTE: entra en https://malo.example"]), true);
+        $this->assertArrayHasKey('nombre_comercial', $errores);
+        $this->assertStringNotContainsString("\n", $datos['nombre_comercial']);
+        [, $errores] = $d->validarFicha($this->ficha(['servicios' => 'descalcificadores', 'municipio' => ['x']]), true);
+        $this->assertArrayHasKey('servicios', $errores, 'Los campos con tipo incorrecto cuentan como vacíos');
+    }
+
+    public function testCambiarElEmailQuitaLaVerificacionYCaducaLosEnlaces(): void
+    {
+        $app = $this->app();
+        $d = $app->directorio();
+        $id = $this->publicar($app, [], ['verificada' => 1]);
+        $antes = Directorio::huellaEmail($d->porId($id)['email']);
+        $d->asignarEmail($id, 'otra@ejemplo.test');
+        $e = $d->porId($id);
+        $this->assertSame(0, $e['verificada']);
+        $this->assertNotSame($antes, Directorio::huellaEmail($e['email']));
+    }
+
+    public function testLaPrioridadInternaOrdenaDentroDeCadaGrupo(): void
+    {
+        $app = $this->app();
+        $this->publicar($app, ['nombre_comercial' => 'Cerca', 'municipio' => 'Barcelona']);
+        $this->publicar($app, ['nombre_comercial' => 'Mía', 'municipio' => 'Badalona'], ['prioridad' => 2]);
+        $orden = array_column($app->directorio()->para($app->municipios()->obtener('08019'), '2026-11-12'), 'nombre_comercial');
+        $this->assertSame(['Mía', 'Cerca'], $orden);
+    }
+
     public function testFichaIndexableSoloConDescripcion(): void
     {
         $this->assertFalse(Directorio::indexable(['ficha' => 'publicada', 'descripcion' => 'Corta']));
