@@ -1,5 +1,12 @@
 # Plan AguaSinCal.es: web de captación de leads de tratamiento de agua
 
+> **Revisión del 12-nov-2026** (sustituye a lo anterior donde no coincida):
+> - **Objetivo ampliado:** fuente de referencia sobre el agua del grifo en España para buscadores e IAs + directorio de empresas como monetización principal (ficha gratuita con contacto por nuestro formulario; ficha destacada de pago con teléfono y web). Los leads al profesional siguen igual. AdSense y noticias patrocinadas, más adelante.
+> - **Datos:** SINAC de 1.429 municipios (Cataluña, C. Valenciana, Baleares y Málaga desde 1.000 habitantes; resto de España desde 10.000). Se actualizan solos cada semana con GitHub Actions. Datos abiertos en CSV y `llms.txt`.
+> - **Directorio:** una empresa y un profesional son la misma ficha. Orden: destacadas vigentes primero y luego por cercanía, dentro del radio de cada empresa. Las destacadas caducan solas. Fichas añadidas por nosotros (data/empresas.csv), altas propias revisadas con un clic y fichas propias.
+> - **Contenidos:** firmados por «Equipo AguaSinCal» con fuentes y metodología públicas. Si un técnico revisa una guía, sale su nombre.
+> - **Aplazado:** noticias automáticas (poco valor SEO con la web nueva, riesgo de penalización, otra pieza que vigilar), AdSense (requiere banner de cookies; cuando haya tráfico), piscinas.
+>
 > Plan aprobado el 5-oct-2026. Cambios posteriores: vista previa sin contraseña (noindex), teléfono y WhatsApp como variables de GitHub, un solo buzón (info@), publicación por FTP (sin SSH ni cron) y clave de la app generada en el servidor. Los pasos vigentes están en [PASOS.md](PASOS.md).
 
 ## Contexto

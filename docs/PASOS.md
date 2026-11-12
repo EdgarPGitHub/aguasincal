@@ -47,32 +47,10 @@ Hay un borrador en [acuerdo-profesional.md](acuerdo-profesional.md).
 
 ---
 
-## Paso 2 · Ajustes del entorno de Claude (para datos y keywords)
+## Paso 2 · Ajustes del entorno de Claude (hecho el 12-nov)
 
-En la sesión de Claude: menú del entorno (barra de título) → **Edit**.
-
-1. **Network access → Custom**, manteniendo la lista por defecto, y añade estos dominios:
-   ```
-   api.dataforseo.com
-   sinac.sanidad.gob.es
-   www.sanidad.gob.es
-   www.ine.es
-   servicios.ine.es
-   centrodedescargas.cnig.es
-   web.archive.org
-   aguasincal.es
-   www.aguasincal.es
-   ```
-2. **Variables de entorno:**
-   ```
-   DATAFORSEO_LOGIN=<tu login de la API>
-   DATAFORSEO_PASSWORD=<tu password de la API>
-   ```
-   Las encontrarás en el panel de DataForSEO → API Access. Es la contraseña de la API, no la de tu cuenta.
-
-Presupuesto aproximado para la Fase 0: 20–30 $.
-
-Los cambios se aplican al abrir una sesión nueva.
+- Red: ya están permitidos SINAC, Sanidad, INE, datos.gob.es, CNIG, BOE y aguasincal.es.
+- DataForSEO: la credencial se guarda con el formulario seguro que abre Claude (nunca por el chat). Va el **API Login** (tu email) y la **API Password** de https://app.dataforseo.com/api-access, que no es la contraseña con la que entras en la web.
 
 ---
 
@@ -144,14 +122,21 @@ En unos 3 minutos aparece un ✓ verde y la web está en https://aguasincal.es (
 
 1. Entra en `https://aguasincal.es/<PANEL_RUTA>/` con `ADMIN_EMAIL` y `ADMIN_CLAVE`.
 2. La primera vez te pide la verificación en dos pasos: escanea el QR con Google Authenticator (o similar) y escribe el código.
-3. En **Profesionales**, da de alta a tu profesional.
+3. En **Empresas**, da de alta a tu profesional (y tus marcas, si quieres que salgan en el directorio). Para que tenga ficha pública: municipio, servicios y «Ficha pública: Publicada».
 4. En **Cobertura**, activa las provincias 08, 17, 25, 43 y 29 para sus servicios.
+5. Las altas que hagan otras empresas desde la web te llegan por email con dos botones: **Publicar** o **Descartar**. Para destacar una ficha (sale la primera y muestra teléfono y web), pon la fecha en «Destacada hasta»: al pasar la fecha deja de estar destacada sola.
 
 ### Más adelante
 
 - **Teléfono / WhatsApp:** crea las variables `TELEFONO` y `WHATSAPP` (p. ej. `600 12 34 56`) y vuelve a pulsar **Run workflow**. Los botones solo aparecen en las páginas de zonas con profesional.
 - **Lanzamiento:** variable `INDEXAR` = `si` y **Run workflow**.
-- Si GitHub dice que el certificado del servidor FTP no es válido, revisa que `FTP_HOST` sea el nombre del servidor que muestra «Configurar cliente FTP».
+- Si GitHub dice que el certificado del servidor FTP no es válido, revisa que `FTP_HOST` sea `com1014.raiolanetworks.es`.
+- **Publicación automática:** con la variable `DESPLIEGUE_ACTIVO` = `si`, la web se vuelve a publicar sola cada vez que cambia `main`, y cada lunes con los datos del agua actualizados.
+
+### Lo que funciona solo
+
+- **Datos del agua:** cada lunes, GitHub actualiza desde el SINAC los municipios con datos más antiguos (Actions → «Datos del agua (SINAC)»). Si el SINAC falla, GitHub te avisa por email y la web sigue con los datos anteriores.
+- **Copias de seguridad, limpieza de datos antiguos y caducidad de las fichas destacadas:** las hace la propia web, sin cron.
 
 ---
 
