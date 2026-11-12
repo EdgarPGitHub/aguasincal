@@ -12,7 +12,7 @@ declare(strict_types=1);
  *   php scripts/sinac.php --particion=1/3 --salida=/tmp/s1.jsonl   # reparto para la carga inicial en paralelo
  *   php scripts/sinac.php --unir=/tmp/s1.jsonl,/tmp/s2.jsonl          # junta esos archivos en data/sinac.jsonl
  *
- * Va sin prisa: una petición cada --pausa segundos (1 por defecto). Las redes grandes tardan hasta ~90 s en
+ * Va sin prisa: una petición cada --pausa segundos (1 por defecto). Las redes grandes tardan hasta ~5 minutos en
  * responder. Guarda tras cada municipio; si uno falla, conserva sus datos anteriores.
  */
 
@@ -130,7 +130,7 @@ function pedir(string $accion, array $campos, float $pausa): string
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => http_build_query($campos),
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 240,
+            CURLOPT_TIMEOUT => 420, // la red principal de Córdoba tarda ~5 minutos en responder
             CURLOPT_COOKIEFILE => '',
             CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; AguaSinCal-datos/1.0)',
         ]);
