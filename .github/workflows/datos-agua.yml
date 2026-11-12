@@ -1,5 +1,6 @@
-# Datos del agua: cada lunes actualiza desde el SINAC los municipios con datos más antiguos (hasta 2 horas),
-# guarda data/sinac.jsonl en main y, si la publicación automática está activada, despliega la web.
+# Datos del agua (SINAC). Cada lunes actualiza los municipios con datos más antiguos: 3 partes en paralelo,
+# 40 minutos cada una. A mano se puede dar más tiempo (p. ej. 320 minutos para la carga inicial completa).
+# Guarda data/sinac.jsonl en main y publica la web si DESPLIEGUE_ACTIVO=si (o si se marca «publicar»).
 # Sin intervención: si el SINAC falla, la ejecución sale en rojo (GitHub avisa por email) y la web sigue con los datos anteriores.
 name: Datos del agua (SINAC)
 
@@ -9,8 +10,12 @@ on:
   workflow_dispatch:
     inputs:
       minutos:
-        description: 'Minutos máximos de descarga'
-        default: '120'
+        description: 'Minutos de descarga por parte (máx. 320)'
+        default: '40'
+      publicar:
+        description: 'Publicar la web al terminar aunque DESPLIEGUE_ACTIVO no sea si'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -21,38 +26,71 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  actualizar:
+  descargar:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    timeout-minutes: 345
+    strategy:
+      fail-fast: false
+      matrix:
+        parte: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
-
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
           extensions: curl, mbstring
           coverage: none
+      - name: Descargar del SINAC (parte ${{ matrix.parte }} de 3)
+        run: |
+          touch data/sinac.jsonl
+          cp data/sinac.jsonl parte.jsonl
+          php scripts/sinac.php --minutos=${{ inputs.minutos || '40' }} --particion=${{ matrix.parte }}/3 --salida=parte.jsonl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parte-${{ matrix.parte }}
+          path: parte.jsonl
+          retention-days: 3
 
-      - name: Descargar del SINAC lo más antiguo
-        run: php scripts/sinac.php --minutos=${{ inputs.minutos || '120' }}
-
-      - name: Guardar en main
+  guardar:
+    needs: descargar
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: parte-*
+          path: partes
+      - name: Unir y guardar en main
         id: guardar
         run: |
+          touch data/sinac.jsonl
+          archivos=$(find partes -name parte.jsonl | paste -sd, -)
+          [ -n "$archivos" ] || { echo "::error::No hay datos descargados"; exit 1; }
+          php scripts/sinac.php --unir="$archivos"
           if git diff --quiet -- data/sinac.jsonl && [ -z "$(git ls-files --others --exclude-standard data/sinac.jsonl)" ]; then
             echo "cambios=no" >> "$GITHUB_OUTPUT"; exit 0
           fi
           git config user.name "aguasincal-datos"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/sinac.jsonl
-          git commit -m "Datos del SINAC actualizados"
-          git push origin HEAD:main
+          git commit -m "Datos del SINAC actualizados ($(grep -c . data/sinac.jsonl) municipios)"
+          for intento in 1 2 3; do
+            git push origin HEAD:main && break
+            git pull --rebase origin main
+          done
           echo "cambios=si" >> "$GITHUB_OUTPUT"
-
       - name: Publicar la web con los datos nuevos
-        if: steps.guardar.outputs.cambios == 'si' && vars.DESPLIEGUE_ACTIVO == 'si'
+        if: steps.guardar.outputs.cambios == 'si' && (vars.DESPLIEGUE_ACTIVO == 'si' || inputs.publicar)
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy.yml --ref main

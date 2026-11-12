@@ -13,7 +13,7 @@ declare(strict_types=1);
  *   php scripts/sinac.php --unir=/tmp/s1.jsonl,/tmp/s2.jsonl          # junta esos archivos en data/sinac.jsonl
  *
  * Va sin prisa: una petición cada --pausa segundos (1 por defecto). Las redes grandes tardan hasta ~90 s en
- * responder. Guarda cada 10 municipios; si uno falla, conserva sus datos anteriores.
+ * responder. Guarda tras cada municipio; si uno falla, conserva sus datos anteriores.
  */
 
 const BASE = 'https://sinac.sanidad.gob.es/CiudadanoWeb/ciudadano/';
@@ -68,7 +68,8 @@ $datos = leerJsonl($salida);
 $pendientes = array_map('strval', array_keys($lista));
 usort($pendientes, fn ($a, $b) => [$datos[$a]['consultado'] ?? '', -$lista[$a][1]] <=> [$datos[$b]['consultado'] ?? '', -$lista[$b][1]]);
 if (isset($op['particion']) && preg_match('#^(\d+)/(\d+)$#', $op['particion'], $p) && $p[1] >= 1 && $p[1] <= $p[2]) {
-    $pendientes = array_values(array_filter($pendientes, fn ($ine, $i) => $i % (int) $p[2] === (int) $p[1] - 1, ARRAY_FILTER_USE_BOTH));
+    // Reparto fijo por municipio (no por posición), para que al reanudar cada proceso siga con los suyos.
+    $pendientes = array_values(array_filter($pendientes, fn ($ine) => crc32($ine) % (int) $p[2] === (int) $p[1] - 1));
 }
 
 $hechos = $errores = 0;
@@ -85,7 +86,7 @@ foreach ($pendientes as $i => $ine) {
         $errores++;
         fwrite(STDERR, sprintf("%s [%d/%d] %s %s: ERROR %s\n", date('H:i:s'), $i + 1, count($pendientes), $ine, $lista[$ine][0], $e->getMessage()));
     }
-    if ($hechos % 10 === 0) {
+    if ($hechos > 0) { // guarda tras cada municipio: si el proceso se corta, no se pierde nada
         guardar($salida, $datos);
     }
 }

@@ -58,6 +58,16 @@
           <li><a href="/dureza-agua/{{ provincias[codigo].slug }}/">{{ provincias[codigo].nombre }}</a></li>
         {% endfor %}
       </ul>
+      <h2 class="seccion__titulo">Directorio de empresas</h2>
+      <p>Empresas de descalcificadores, ósmosis, filtros y fuentes de agua de toda España, ordenadas por cercanía a tu municipio.</p>
+      <form class="buscador" action="/empresas/" method="get" role="search">
+        <label for="buscar-empresas-inicio" class="saltar">Municipio</label>
+        <div class="buscador__fila">
+          <input id="buscar-empresas-inicio" name="q" type="search" placeholder="Tu municipio" required>
+          <button class="boton boton--sec" type="submit">Ver empresas</button>
+        </div>
+      </form>
+      <p class="nota">¿Tienes una empresa del sector? <a href="/empresas/alta/">Publica tu ficha gratis</a>.</p>
     </div>
     <div>
       <h2 class="seccion__titulo">Guías útiles</h2>
