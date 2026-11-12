@@ -20,6 +20,8 @@ Consultamos el SINAC de forma periódica: cada semana se actualizan los municipi
 
 Un municipio puede recibir agua de varias **redes de abastecimiento** (zonas), cada una con su origen y su tratamiento. Para cada red tomamos el último valor de **dureza total** publicado en el SINAC. Si una red no publica la dureza pero sí el calcio y el magnesio, la calculamos con la fórmula habitual: dureza (mg/L de CaCO₃) = 2,497 × calcio + 4,118 × magnesio. Lo indicamos con un asterisco.
 
+Cuando una red publica las dos cosas, las contrastamos: algunas empresas cargan la dureza en grados franceses aunque la etiqueten en mg/L, y entonces la convertimos; si los valores no cuadran, usamos el más reciente. No usamos muestras de hace más de 5 años.
+
 La dureza del municipio es la **media ponderada por la población** que abastece cada red, y mostramos también el valor de cada zona. Descartamos las redes que no abastecen a población (aeropuertos, industrias, puertos). El resto de parámetros (nitratos, sodio, pH, etc.) se calculan igual y se comparan con los valores paramétricos del **Real Decreto 3/2023**.
 
 ## Datos abiertos

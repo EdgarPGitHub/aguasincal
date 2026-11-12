@@ -142,7 +142,7 @@ final class DatosAgua
             return;
         }
         foreach ($redes as $r) {
-            $dureza = self::durezaMgL($r['parametros'] ?? []);
+            $dureza = self::durezaMgL($r['parametros'] ?? [], $d['consultado'] ?? null);
             if ($dureza !== null) {
                 $m['zonas'][] = [
                     'nombre' => self::nombreRed($r['nombre']),
@@ -216,20 +216,32 @@ final class DatosAgua
         ];
     }
 
-    /** @return array{mg: float, fecha: string, calculada: bool}|null dureza total en mg/L de CaCO3 */
-    public static function durezaMgL(array $p): ?array
+    /**
+     * Dureza total en mg/L de CaCO3 de una red, con comprobación de coherencia.
+     * Si hay calcio, se contrasta con la dureza calculada (2,497·Ca + 4,118·Mg): algunas empresas publican la
+     * dureza en °fH aunque la etiqueten en mg/L (se multiplica por 10) y otras cargan valores que no cuadran
+     * (se usa el dato más reciente; a igual fecha, el calculado). Se descartan muestras de hace más de 5 años.
+     * @return array{mg: float, fecha: string, calculada: bool}|null
+     */
+    public static function durezaMgL(array $p, ?string $consultado = null): ?array
     {
-        if (isset($p['dureza']) && $p['dureza'][0] >= 5 && $p['dureza'][0] <= 1500) {
-            return ['mg' => (float) $p['dureza'][0], 'fecha' => $p['dureza'][2], 'calculada' => false];
+        $limite = date('Y-m-d', strtotime(($consultado ?: date('Y-m-d')) . ' -5 years'));
+        $directa = isset($p['dureza']) && $p['dureza'][0] > 0 && $p['dureza'][2] >= $limite
+            ? ['mg' => (float) $p['dureza'][0], 'fecha' => (string) $p['dureza'][2], 'calculada' => false] : null;
+        $calculada = null;
+        if (isset($p['calcio']) && $p['calcio'][0] > 0 && $p['calcio'][2] >= $limite) {
+            $mg = round(2.497 * $p['calcio'][0] + 4.118 * ($p['magnesio'][0] ?? 0));
+            $calculada = ['mg' => $mg, 'fecha' => (string) $p['calcio'][2], 'calculada' => true];
         }
-        // Sin dato directo: dureza = 2,497·Ca + 4,118·Mg (mg/L), si hay calcio.
-        if (isset($p['calcio']) && $p['calcio'][0] > 0) {
-            $mg = 2.497 * $p['calcio'][0] + 4.118 * ($p['magnesio'][0] ?? 0);
-            if ($mg >= 5 && $mg <= 1500) {
-                return ['mg' => round($mg), 'fecha' => $p['calcio'][2], 'calculada' => true];
-            }
-        }
-        return null;
+        $elegida = match (true) {
+            $directa === null => $calculada,
+            $calculada === null => $directa,
+            $directa['mg'] >= 0.6 * $calculada['mg'] && $directa['mg'] <= 1.6 * $calculada['mg'] => $directa,
+            $directa['mg'] * 10 >= 0.6 * $calculada['mg'] && $directa['mg'] * 10 <= 1.6 * $calculada['mg'] => ['mg' => $directa['mg'] * 10] + $directa,
+            $directa['fecha'] > $calculada['fecha'] => $directa,
+            default => $calculada,
+        };
+        return $elegida !== null && $elegida['mg'] >= 5 && $elegida['mg'] <= 1500 ? $elegida : null;
     }
 
     /** "XARXA TER CARDEDEU (ALELLA)" → "Xarxa Ter Cardedeu (Alella)" */
