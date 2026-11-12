@@ -18,11 +18,28 @@
   var botonMenu = document.querySelector('.menu__boton');
   var nav = document.getElementById('menu-principal');
   if (botonMenu && nav) {
+    var textoMenu = botonMenu.querySelector('.menu__texto');
+    var cabecera = document.querySelector('.cabecera');
+    var movil = window.matchMedia('(max-width: 980px)');
+    var menu = function (abrir) {
+      if (abrir && cabecera) {
+        doc.style.setProperty('--alto-cabecera', Math.round(cabecera.getBoundingClientRect().bottom) + 'px');
+      }
+      nav.classList.toggle('abierto', abrir);
+      doc.classList.toggle('menu-abierto', abrir);
+      botonMenu.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+      if (textoMenu) { textoMenu.textContent = abrir ? 'Cerrar' : 'Menú'; }
+    };
     botonMenu.hidden = false;
-    botonMenu.addEventListener('click', function () {
-      var abierto = nav.classList.toggle('abierto');
-      botonMenu.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+    botonMenu.addEventListener('click', function () { menu(!nav.classList.contains('abierto')); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && nav.classList.contains('abierto')) { menu(false); botonMenu.focus(); }
     });
+    /* Al girar el móvil o ensanchar la ventana a escritorio, se cierra para no dejar la página bloqueada */
+    var cerrarSiEscritorio = function () { if (!movil.matches) { menu(false); } };
+    if (movil.addEventListener) { movil.addEventListener('change', cerrarSiEscritorio); }
+    /* Volver atrás desde otra página (caché del navegador) no debe mostrar el menú abierto */
+    window.addEventListener('pageshow', function () { menu(false); });
   }
 
   /* Origen del lead: parámetros de campaña y web de procedencia, solo en el formulario de esta página */
