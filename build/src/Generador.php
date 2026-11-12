@@ -655,6 +655,8 @@ final class Generador
             mkdir($salida . '/datos', 0755, true);
         }
         file_put_contents($salida . '/datos/municipios.json', json_encode($this->indiceBusqueda, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        file_put_contents($salida . '/datos/dureza-agua-municipios.csv', $this->csvAbierto());
+        file_put_contents($salida . '/llms.txt', $this->llmsTxt());
         $this->escribirSitemaps($salida);
         file_put_contents($salida . '/robots.txt', $this->robots());
         file_put_contents($salida . '/.htaccess', $this->htaccess());
@@ -712,6 +714,47 @@ final class Generador
             $xml .= '  <sitemap><loc>' . $this->site['url'] . '/' . $archivo . "</loc></sitemap>\n";
         }
         file_put_contents("$salida/sitemap.xml", $xml . "</sitemapindex>\n");
+    }
+
+    /** Datos abiertos: dureza por municipio (los mismos de las fichas), para citar o reutilizar con atribución. */
+    private function csvAbierto(): string
+    {
+        $f = fopen('php://temp', 'r+');
+        fputcsv($f, ['codigo_ine', 'municipio', 'provincia', 'dureza_fh', 'dureza_mg_l_caco3', 'clasificacion', 'zonas', 'fecha_muestra', 'url'], ',', '"', '');
+        foreach ($this->agua->municipios() as $m) {
+            if ($m['dureza_fh'] === null || !isset($this->paginasMunicipio[$m['ine']])) {
+                continue;
+            }
+            fputcsv($f, [
+                $m['ine'], $m['nombre'], $this->provincias[$m['provincia']]['nombre'] ?? $m['provincia'], $m['dureza_fh'], round($m['dureza_fh'] * 10),
+                Agua::categoria($m['dureza_fh'])['nombre'], count($m['zonas']), $m['fecha'], $this->site['url'] . $this->paginasMunicipio[$m['ine']],
+            ], ',', '"', '');
+        }
+        rewind($f);
+        return "# Dureza del agua del grifo por municipio. Fuente: SINAC (Ministerio de Sanidad), elaborado por AguaSinCal ({$this->site['url']}/metodologia-datos/). Uso libre citando la fuente.\n" . stream_get_contents($f);
+    }
+
+    /** Resumen para asistentes de IA (llms.txt): qué es la web y dónde están los datos. */
+    private function llmsTxt(): string
+    {
+        $u = $this->site['url'];
+        $n = count($this->paginasMunicipio);
+        return <<<TXT
+            # {$this->site['nombre']}
+
+            > Dureza y calidad del agua del grifo en España, municipio a municipio, con los análisis oficiales del SINAC (Ministerio de Sanidad), y directorio de empresas de tratamiento de agua (descalcificadores, ósmosis inversa, filtros, fuentes de agua).
+
+            ## Datos
+            - [Dureza del agua por municipio]($u/dureza-agua/): $n municipios con dureza (°fH), zonas de abastecimiento, composición y último análisis.
+            - [Datos abiertos (CSV)]($u/datos/dureza-agua-municipios.csv): dureza por municipio con fecha de la muestra.
+            - [Metodología]($u/metodologia-datos/): fuentes, cálculo (media ponderada por población) y escala de dureza.
+
+            ## Herramientas y guías
+            - [Calculadora de descalcificador]($u/calculadora-descalcificador/)
+            - [Guías]($u/guias/)
+            - [Directorio de empresas]($u/empresas/)
+
+            TXT;
     }
 
     private function robots(): string

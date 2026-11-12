@@ -22,6 +22,10 @@ Un municipio puede recibir agua de varias **redes de abastecimiento** (zonas), c
 
 La dureza del municipio es la **media ponderada por la población** que abastece cada red, y mostramos también el valor de cada zona. Descartamos las redes que no abastecen a población (aeropuertos, industrias, puertos). El resto de parámetros (nitratos, sodio, pH, etc.) se calculan igual y se comparan con los valores paramétricos del **Real Decreto 3/2023**.
 
+## Datos abiertos
+
+Puedes descargar la dureza de todos los municipios con ficha en [CSV](/datos/dureza-agua-municipios.csv) y reutilizarla citando la fuente: «SINAC (Ministerio de Sanidad), elaborado por AguaSinCal».
+
 ## Cómo elaboramos las guías
 
 Las guías y las páginas de servicio las escribe el equipo de AguaSinCal con información de la normativa, de los datos oficiales y de la documentación técnica de los fabricantes. No incluimos precios ni cifras que no podamos respaldar. Si un técnico revisa una guía, aparece su nombre. Si ves un error, escríbenos a %titular.email% y lo corregimos.
