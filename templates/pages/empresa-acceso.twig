@@ -1,0 +1,39 @@
+{% extends 'base.twig' %}
+{% set body_class = 'pagina-form' %}
+{% block contenido %}
+<div class="contenedor contenedor--form">
+{% if hecho %}
+  <div class="tarjeta resultado">
+    <h1>Revisa tu email</h1>
+    <p class="entradilla">{% if empresa %}Si el email es el de la ficha, te llegará el enlace para editarla. Si no lo es, revisaremos tu petición y te escribiremos.{% else %}Si hay alguna ficha con ese email, te hemos enviado el enlace para editarla.{% endif %}</p>
+  </div>
+{% else %}
+  <header class="cabecera-pagina">
+    <h1>{{ empresa ? 'Gestiona la ficha de ' ~ empresa.nombre_comercial : pagina.titulo }}</h1>
+    <p class="entradilla">Escribe tu email y te enviaremos un enlace para editar la ficha. Sin contraseñas.</p>
+  </header>
+  {% if errores.general is defined %}<p class="aviso aviso--error" role="alert">{{ errores.general }}</p>{% endif %}
+  {% if token %}
+  <div class="tarjeta">
+  <form action="/empresas/acceso/" method="post" novalidate>
+    <input type="hidden" name="token" value="{{ token }}">
+    {% if empresa %}<input type="hidden" name="empresa" value="{{ empresa.slug }}">{% endif %}
+    <div class="trampa" aria-hidden="true"><label>No rellenes este campo <input name="{{ trampa }}" tabindex="-1" autocomplete="off"></label></div>
+    <label class="campo{{ errores.email is defined ? ' campo--error' }}"><span>Email de la empresa</span>
+      <input name="email" type="email" required maxlength="120" autocomplete="email" value="{{ email }}">
+      {% if errores.email is defined %}<em class="error">{{ errores.email }}</em>{% endif %}
+    </label>
+    {% if empresa %}
+    <label class="campo"><span>Mensaje <small>(opcional: cómo podemos comprobar que eres de la empresa)</small></span>
+      <textarea name="mensaje" rows="3" maxlength="500"></textarea>
+    </label>
+    {% endif %}
+    <button class="boton boton--ancho" type="submit">Enviarme el enlace</button>
+  </form>
+  </div>
+  {% else %}
+  <p><a class="boton" href="/empresas/acceso/">Pedir un enlace nuevo</a></p>
+  {% endif %}
+{% endif %}
+</div>
+{% endblock %}

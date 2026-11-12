@@ -19,6 +19,11 @@ final class Accion
         'enviar_whatsapp' => 'Enviar el lead al profesional por WhatsApp',
         'invalido' => 'Marcar el lead como inválido',
     ];
+    private const ACCIONES_EMPRESA = [
+        'publicar_empresa' => 'Publicar la ficha de la empresa',
+        'descartar_empresa' => 'Descartar el alta de la empresa',
+        'asignar_email' => 'Dar a este email la gestión de la ficha',
+    ];
 
     public function __construct(private readonly App $app)
     {
@@ -29,6 +34,9 @@ final class Accion
         Http::cabeceras(panel: true);
         $token = (string) ($_POST['t'] ?? $_GET['t'] ?? '');
         $datos = $this->app->firma()->verificar($token, time());
+        if ($datos !== null && isset(self::ACCIONES_EMPRESA[$datos['a'] ?? ''])) {
+            return $this->empresa($token, $datos);
+        }
         if ($datos === null || !isset(self::ACCIONES[$datos['a'] ?? ''])) {
             http_response_code(403);
             return $this->render(['error' => 'El enlace no es válido o ha caducado. Gestiona el lead desde el panel.']);
@@ -82,6 +90,39 @@ final class Accion
             'hecho' => 'Lead #' . $lead['id'] . ' marcado como enviado. Pulsa el botón para abrir WhatsApp con el mensaje preparado.',
             'whatsapp_url' => 'https://wa.me/' . $profesional['whatsapp'] . '?text=' . rawurlencode($notificaciones->textoWhatsapp($lead)),
         ];
+    }
+
+    /** Acciones sobre fichas del directorio (enlaces del aviso de alta o de reclamación). */
+    private function empresa(string $token, array $datos): string
+    {
+        $directorio = $this->app->directorio();
+        $empresa = $directorio->porId((int) ($datos['e'] ?? 0));
+        if ($empresa === null) {
+            http_response_code(404);
+            return $this->render(['error' => 'Esta empresa ya no existe.']);
+        }
+        $vars = ['token' => $token, 'accion' => $datos['a'], 'accion_nombre' => self::ACCIONES_EMPRESA[$datos['a']], 'empresa' => $empresa, 'email_nuevo' => $datos['m'] ?? ''];
+        if (!Http::esPost()) {
+            return $this->render($vars);
+        }
+        $id = (int) $empresa['id'];
+        $avisos = $this->app->notificaciones();
+        switch ($datos['a']) {
+            case 'publicar_empresa':
+                $directorio->cambiarFicha($id, 'publicada');
+                $avisos->avisarEmpresaPublicada($directorio->porId($id));
+                return $this->render($vars + ['hecho' => 'Ficha publicada: ' . $this->app->url('/empresa/' . $empresa['slug'] . '/')]);
+            case 'descartar_empresa':
+                $directorio->cambiarFicha($id, 'oculta');
+                return $this->render($vars + ['hecho' => 'Alta descartada. La ficha queda oculta (puedes recuperarla desde el panel).']);
+            default: // asignar_email
+                if (!filter_var($datos['m'] ?? '', FILTER_VALIDATE_EMAIL)) {
+                    return $this->render($vars + ['error' => 'El email no es válido.']);
+                }
+                $directorio->asignarEmail($id, (string) $datos['m']);
+                $avisos->enlaceEdicionEmpresa($directorio->porId($id), time(), false);
+                return $this->render($vars + ['hecho' => 'Email asignado. Le hemos enviado el enlace para editar la ficha.']);
+        }
     }
 
     private function render(array $vars): string

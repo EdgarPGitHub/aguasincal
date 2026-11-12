@@ -37,6 +37,11 @@ final class Presupuesto
             $datos = ['servicio' => (string) ($q['servicio'] ?? ''), 'cp' => '', 'tipo_cliente' => (string) ($q['tipo'] ?? 'particular')];
             return $this->render('paso1', ['datos' => $datos, 'errores' => [], 'meta' => $this->meta($q)]);
         }
+        if (!isset($q['cp']) && isset($q['servicio'])) {
+            // Viene de un enlace con el servicio ya elegido: falta el CP, sin mostrar errores todavía.
+            $datos = ['servicio' => (string) $q['servicio'], 'cp' => '', 'tipo_cliente' => (string) ($q['tipo'] ?? 'particular')];
+            return $this->render('paso1', ['datos' => $datos, 'errores' => [], 'meta' => $this->meta($q)]);
+        }
         if (isset($q['servicio']) || isset($q['cp'])) {
             [$datos, $errores] = $this->app->leads()->validarPaso1($q);
             $meta = $this->meta($q);
@@ -80,8 +85,7 @@ final class Presupuesto
             return $this->render('paso1', ['datos' => $datos, 'errores' => $errores, 'meta' => $meta]);
         }
 
-        $servicioRuta = Leads::servicioEfectivo($datos['servicio'], $datos['tipo_cliente']);
-        $cobertura = $this->app->cobertura()->resolver($datos['provincia'], $servicioRuta);
+        $cobertura = $this->resolver($datos, $meta);
         $version = Consentimiento::version($cobertura['modo']);
         if (!$errores && ($in['consentimiento_version'] ?? '') !== $version) {
             $errores['acepto'] = 'La disponibilidad en tu zona ha cambiado. Lee el nuevo texto y vuelve a marcar la casilla.';
@@ -99,16 +103,37 @@ final class Presupuesto
 
         $lead = $leads->obtener($id);
         $notificaciones = $this->app->notificaciones();
+        // Empresa del directorio que ha confirmado su email: le llega la solicitud directamente.
+        $empresa = $cobertura['empresa'] ? $cobertura['profesional'] : null;
+        if ($empresa !== null && $empresa['verificada'] && filter_var($empresa['email'], FILTER_VALIDATE_EMAIL)
+            && $notificaciones->enviarAProfesional($lead, $empresa)) {
+            $leads->marcarEnviado($id, (int) $empresa['id']);
+            $lead = $leads->obtener($id);
+        }
         $notificaciones->avisarTitular($lead, $ahora);
         $notificaciones->confirmarCliente($lead, $cobertura['profesional']);
 
         Http::redirigir('/presupuesto/?ok=1&m=' . $cobertura['modo']);
     }
 
+    /**
+     * Quién atenderá la solicitud: la empresa elegida en el directorio (si está publicada) o, si no,
+     * el profesional que cubre la provincia y el servicio.
+     * @return array{modo: string, profesional: ?array, empresa: bool}
+     */
+    private function resolver(array $datos, array $meta): array
+    {
+        $empresa = $meta['empresa'] !== '' ? $this->app->directorio()->publicada($meta['empresa']) : null;
+        if ($empresa !== null) {
+            return ['modo' => 'activo', 'profesional' => $empresa, 'empresa' => true];
+        }
+        $servicioRuta = Leads::servicioEfectivo($datos['servicio'], $datos['tipo_cliente']);
+        return $this->app->cobertura()->resolver($datos['provincia'], $servicioRuta) + ['empresa' => false];
+    }
+
     private function paso2(array $datos, array $errores, array $meta, int $ahora): string
     {
-        $servicioRuta = Leads::servicioEfectivo($datos['servicio'], $datos['tipo_cliente']);
-        $cobertura = $this->app->cobertura()->resolver($datos['provincia'], $servicioRuta);
+        $cobertura = $this->resolver($datos, $meta);
         $nombreSitio = $this->app->config('site')['nombre'];
         return $this->render('paso2', [
             'datos' => $datos,
@@ -116,6 +141,7 @@ final class Presupuesto
             'meta' => $meta,
             'modo' => $cobertura['modo'],
             'profesional' => $cobertura['profesional'],
+            'empresa_elegida' => $cobertura['empresa'],
             'provincia_nombre' => $this->app->provincias()->nombre($datos['provincia']),
             'consentimiento' => Consentimiento::texto($cobertura['modo'], $cobertura['profesional'], $nombreSitio),
             'consentimiento_version' => Consentimiento::version($cobertura['modo']),
@@ -139,6 +165,7 @@ final class Presupuesto
             ? ($partes['scheme'] ?? 'https') . '://' . $partes['host'] . ($partes['path'] ?? '')
             : '';
         return [
+            'empresa' => preg_match('/^[a-z0-9-]{1,90}$/', (string) ($in['empresa'] ?? '')) ? (string) $in['empresa'] : '',
             'pagina_origen' => Http::rutaInterna((string) ($in['origen'] ?? '')),
             'referrer' => mb_substr($referrer, 0, 300),
             'utm' => $utm,
@@ -147,7 +174,9 @@ final class Presupuesto
 
     private function render(string $paso, array $vars): string
     {
+        $empresa = !empty($vars['meta']['empresa']) ? $this->app->directorio()->publicada($vars['meta']['empresa']) : null;
         return $this->app->twig()->render('pages/presupuesto.twig', $vars + [
+            'empresa_destino' => $empresa,
             'paso' => $paso,
             'pagina' => [
                 'titulo' => 'Pide presupuesto',

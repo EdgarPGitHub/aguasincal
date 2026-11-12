@@ -1,0 +1,55 @@
+{#- Campos de la ficha (alta y edición). Variables: datos, errores, sugerencias, servicios_lista, radios, provincias, con_email. -#}
+<div class="campos campos--2">
+  <label class="campo{{ errores.nombre_comercial is defined ? ' campo--error' }}"><span>Nombre comercial</span>
+    <input name="nombre_comercial" required maxlength="80" value="{{ datos.nombre_comercial ?? '' }}">
+    {% if errores.nombre_comercial is defined %}<em class="error">{{ errores.nombre_comercial }}</em>{% endif %}
+  </label>
+  <label class="campo{{ errores.razon_social is defined ? ' campo--error' }}"><span>Razón social <small>(opcional)</small></span>
+    <input name="razon_social" maxlength="120" value="{{ datos.razon_social ?? '' }}">
+  </label>
+  <label class="campo{{ errores.municipio is defined ? ' campo--error' }}"><span>Municipio donde está la empresa</span>
+    <input name="municipio" required maxlength="80" autocomplete="address-level2" value="{{ datos.municipio_texto ?? '' }}">
+    {% if errores.municipio is defined %}<em class="error">{{ errores.municipio }}</em>{% endif %}
+  </label>
+  <label class="campo"><span>Provincia</span>
+    <select name="provincia" required>
+      <option value="">Elige la provincia</option>
+      {% for codigo, p in provincias %}<option value="{{ codigo }}"{{ '%02d'|format(codigo) == (datos.provincia ?? '') ? ' selected' }}>{{ p.nombre }}</option>{% endfor %}
+    </select>
+  </label>
+</div>
+{% if sugerencias %}
+<fieldset class="campo sugerencias"><legend>¿Cuál es tu municipio?</legend>
+  {% for s in sugerencias %}<label class="opcion"><input type="radio" name="municipio_ine" value="{{ s.ine }}"> {{ s.nombre }} <small>({{ provincias[s.provincia].nombre ?? s.provincia }})</small></label>{% endfor %}
+</fieldset>
+{% endif %}
+<fieldset class="campo{{ errores.servicios is defined ? ' campo--error' }}"><legend>Servicios que ofreces</legend>
+  <div class="opciones">
+  {% for clave, s in servicios_lista %}<label class="opcion"><input type="checkbox" name="servicios[]" value="{{ clave }}"{{ clave in (datos.servicios ?? []) ? ' checked' }}> {{ s.nombre }}</label>{% endfor %}
+  </div>
+  {% if errores.servicios is defined %}<em class="error">{{ errores.servicios }}</em>{% endif %}
+</fieldset>
+<label class="campo"><span>Hasta dónde trabajas</span>
+  <select name="radio_km">{% for r in radios %}<option value="{{ r }}"{{ r == (datos.radio_km ?? 25) ? ' selected' }}>Hasta {{ r }} km</option>{% endfor %}</select>
+</label>
+<label class="campo{{ errores.descripcion is defined ? ' campo--error' }}"><span>Descripción <small>(qué haces, desde cuándo, marcas, zona; sin enlaces)</small></span>
+  <textarea name="descripcion" rows="5" maxlength="1200">{{ datos.descripcion ?? '' }}</textarea>
+  {% if errores.descripcion is defined %}<em class="error">{{ errores.descripcion }}</em>{% endif %}
+</label>
+<div class="campos campos--2">
+  <label class="campo{{ errores.telefono is defined ? ' campo--error' }}"><span>Teléfono</span>
+    <input name="telefono" type="tel" inputmode="tel" maxlength="20" autocomplete="tel" value="{{ datos.telefono ?? '' }}">
+    {% if errores.telefono is defined %}<em class="error">{{ errores.telefono }}</em>{% endif %}
+  </label>
+  <label class="campo{{ errores.web is defined ? ' campo--error' }}"><span>Web</span>
+    <input name="web" type="url" inputmode="url" maxlength="200" placeholder="https://" value="{{ datos.web ?? '' }}">
+    {% if errores.web is defined %}<em class="error">{{ errores.web }}</em>{% endif %}
+  </label>
+</div>
+{% if con_email ?? false %}
+<label class="campo{{ errores.email is defined ? ' campo--error' }}"><span>Email <small>(no se publica: aquí recibes los clientes y el enlace para editar)</small></span>
+  <input name="email" type="email" required maxlength="120" autocomplete="email" value="{{ datos.email ?? '' }}">
+  {% if errores.email is defined %}<em class="error">{{ errores.email }}</em>{% endif %}
+</label>
+{% endif %}
+<p class="nota">El teléfono y la web se muestran en las fichas destacadas. En las gratuitas, los clientes te contactan con nuestro formulario y te llega su solicitud por email.</p>

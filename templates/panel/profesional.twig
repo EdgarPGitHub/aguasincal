@@ -1,19 +1,39 @@
 {% extends 'panel/layout.twig' %}
-{% block titulo %}{{ id ? 'Editar' : 'Nuevo' }} profesional{% endblock %}
+{% block titulo %}{{ id ? 'Editar' : 'Nueva' }} empresa{% endblock %}
 {% block contenido %}
-<p><a href="{{ base }}?r=profesionales">← Profesionales</a></p>
-<h1>{{ id ? 'Editar' : 'Nuevo' }} profesional</h1>
+<p><a href="{{ base }}?r=profesionales">← Empresas</a></p>
+<h1>{{ id ? datos.nombre_comercial : 'Nueva empresa' }}</h1>
+{% if errores %}<p class="aviso aviso--error" role="alert">Revisa los campos marcados.</p>{% endif %}
 <form method="post" class="tarjeta">
   <input type="hidden" name="csrf" value="{{ csrf }}">
+
+  <h2>Directorio</h2>
   <div class="campos campos--2">
-    <label class="campo{{ errores.nombre_comercial is defined ? ' campo--error' }}"><span>Nombre comercial (se muestra al cliente)</span><input name="nombre_comercial" required value="{{ datos.nombre_comercial }}">{% if errores.nombre_comercial is defined %}<em class="error">{{ errores.nombre_comercial }}</em>{% endif %}</label>
-    <label class="campo"><span>Razón social (texto legal de cesión de datos)</span><input name="razon_social" value="{{ datos.razon_social }}"></label>
-    <label class="campo{{ errores.email is defined ? ' campo--error' }}"><span>Email para recibir leads</span><input name="email" type="email" value="{{ datos.email }}">{% if errores.email is defined %}<em class="error">{{ errores.email }}</em>{% endif %}</label>
-    <label class="campo{{ errores.whatsapp is defined ? ' campo--error' }}"><span>WhatsApp (con prefijo, p. ej. 34600000000)</span><input name="whatsapp" inputmode="numeric" value="{{ datos.whatsapp }}">{% if errores.whatsapp is defined %}<em class="error">{{ errores.whatsapp }}</em>{% endif %}</label>
-    <label class="campo{{ errores.precio_lead is defined ? ' campo--error' }}"><span>Precio por lead (€)</span><input name="precio_lead" inputmode="decimal" value="{{ datos.precio_lead }}"></label>
-    <label class="consentimiento"><input type="checkbox" name="activo" value="1"{{ datos.activo ? ' checked' }}> <span>Activo</span></label>
+    <label class="campo"><span>Ficha pública</span>
+      <select name="ficha">{% for clave, nombre in fichas %}<option value="{{ clave }}"{{ clave == datos.ficha ? ' selected' }}>{{ nombre }}</option>{% endfor %}</select>
+    </label>
+    <label class="campo"><span>Origen</span>
+      <select name="origen">{% for clave, nombre in origenes %}<option value="{{ clave }}"{{ clave == datos.origen ? ' selected' }}>{{ nombre }}</option>{% endfor %}</select>
+    </label>
+    <label class="campo"><span>Destacada hasta (incluido; vacío = no destacada)</span>
+      <input name="destacada_hasta" type="date" value="{{ datos.destacada_hasta }}">
+    </label>
+    <label class="campo"><span>Prioridad interna (−10 a 10; sube o baja en su grupo)</span>
+      <input name="prioridad" type="number" min="-10" max="10" value="{{ datos.prioridad }}">
+    </label>
+    <label class="consentimiento"><input type="checkbox" name="verificada" value="1"{{ datos.verificada ? ' checked' }}> <span>Verificada (la empresa confirmó su email; sus leads del directorio le llegan solos)</span></label>
   </div>
-  <label class="campo"><span>Notas (acuerdo, capacidad, horarios…)</span><textarea name="notas" rows="4">{{ datos.notas }}</textarea></label>
+  {% if datos.slug ?? null %}<p class="nota">Ficha: <a href="/empresa/{{ datos.slug }}/" target="_blank" rel="noopener">/empresa/{{ datos.slug }}/</a></p>{% endif %}
+  {% include 'components/empresa-campos.twig' with {datos: datos, errores: errores, sugerencias: sugerencias, servicios_lista: servicios_lista, radios: radios, provincias: provincias, con_email: false} only %}
+
+  <h2>Leads e interno</h2>
+  <div class="campos campos--2">
+    <label class="campo{{ errores.email is defined ? ' campo--error' }}"><span>Email para recibir leads (no se publica)</span><input name="email" type="email" value="{{ datos.email }}">{% if errores.email is defined %}<em class="error">{{ errores.email }}</em>{% endif %}</label>
+    <label class="campo{{ errores.whatsapp is defined ? ' campo--error' }}"><span>WhatsApp para leads (con prefijo, p. ej. 34600000000)</span><input name="whatsapp" inputmode="numeric" value="{{ datos.whatsapp }}">{% if errores.whatsapp is defined %}<em class="error">{{ errores.whatsapp }}</em>{% endif %}</label>
+    <label class="campo{{ errores.precio_lead is defined ? ' campo--error' }}"><span>Precio por lead (€)</span><input name="precio_lead" inputmode="decimal" value="{{ datos.precio_lead }}"></label>
+    <label class="consentimiento"><input type="checkbox" name="activo" value="1"{{ datos.activo ? ' checked' }}> <span>Activa (puede recibir leads)</span></label>
+  </div>
+  <label class="campo"><span>Notas (acuerdo, precio de destacado, contacto…)</span><textarea name="notas" rows="4">{{ datos.notas }}</textarea></label>
   <button class="boton" type="submit">Guardar</button>
 </form>
 {% endblock %}

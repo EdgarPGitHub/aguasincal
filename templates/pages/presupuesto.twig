@@ -18,13 +18,18 @@
 {% elseif paso == 'paso1' %}
   <header class="cabecera-pagina">
     <h1>Pide presupuesto</h1>
+    {% if empresa_destino %}
+    <p class="entradilla">Vas a pedir presupuesto a <b>{{ empresa_destino.nombre_comercial }}</b>. Dinos qué necesitas y dónde.</p>
+    {% else %}
     <p class="entradilla">Dinos qué necesitas y dónde. En el siguiente paso verás si tenemos profesional verificado en tu zona.</p>
+    {% endif %}
   </header>
   <div class="tarjeta">
   <form class="form-paso1" action="/presupuesto/" method="get">
     {% for campo, valor in meta.utm %}<input type="hidden" name="{{ campo }}" value="{{ valor }}">{% endfor %}
     <input type="hidden" name="origen" value="{{ meta.pagina_origen }}">
     <input type="hidden" name="ref" value="{{ meta.referrer }}">
+    {% if meta.empresa %}<input type="hidden" name="empresa" value="{{ meta.empresa }}">{% endif %}
     <div class="campos">
       <label class="campo{{ errores.servicio is defined ? ' campo--error' }}">
         <span>¿Qué necesitas?</span>
@@ -51,7 +56,9 @@
 {% else %}
   <header class="cabecera-pagina">
     <h1>{{ servicios[datos.servicio].formulario }} en {{ provincia_nombre }}</h1>
-    {% if modo == 'activo' %}
+    {% if empresa_elegida %}
+      <p class="aviso aviso--ok">Vas a pedir presupuesto a <b>{{ profesional.nombre_comercial }}</b>. Déjanos tus datos y se los haremos llegar.</p>
+    {% elseif modo == 'activo' %}
       <p class="aviso aviso--ok">Tenemos un profesional verificado en tu zona{% if profesional %}: <b>{{ profesional.nombre_comercial }}</b>{% endif %}. Déjanos tus datos y te llamará con el presupuesto.</p>
     {% else %}
       <p class="aviso aviso--espera">Todavía no tenemos un profesional verificado en tu zona para este servicio. Si quieres, déjanos tus datos y te avisaremos en cuanto lo tengamos. No se los pasaremos a nadie sin preguntarte antes.</p>
@@ -67,10 +74,11 @@
     <input type="hidden" name="consentimiento_version" value="{{ consentimiento_version }}">
     <input type="hidden" name="origen" value="{{ meta.pagina_origen }}">
     <input type="hidden" name="ref" value="{{ meta.referrer }}">
+    {% if meta.empresa %}<input type="hidden" name="empresa" value="{{ meta.empresa }}">{% endif %}
     {% for campo, valor in meta.utm %}<input type="hidden" name="{{ campo }}" value="{{ valor }}">{% endfor %}
     <div class="trampa" aria-hidden="true"><label>No rellenes este campo <input name="web" tabindex="-1" autocomplete="off"></label></div>
 
-    <p class="resumen-paso1">{{ tipos_cliente[datos.tipo_cliente] }} · CP {{ datos.cp }} · <a href="/presupuesto/?cambiar=1&amp;servicio={{ datos.servicio|url_encode }}&amp;tipo={{ datos.tipo_cliente|url_encode }}&amp;origen={{ meta.pagina_origen|url_encode }}">cambiar</a></p>
+    <p class="resumen-paso1">{{ tipos_cliente[datos.tipo_cliente] }} · CP {{ datos.cp }} · <a href="/presupuesto/?cambiar=1&amp;servicio={{ datos.servicio|url_encode }}&amp;tipo={{ datos.tipo_cliente|url_encode }}&amp;origen={{ meta.pagina_origen|url_encode }}{% if meta.empresa %}&amp;empresa={{ meta.empresa|url_encode }}{% endif %}">cambiar</a></p>
 
     <div class="campos campos--2">
       <label class="campo{{ errores.nombre is defined ? ' campo--error' }}"><span>Nombre</span>

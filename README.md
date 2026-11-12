@@ -32,7 +32,7 @@ php build/build.php                        # genera dist/ con los datos reales
 php build/build.php --datos=tests/fixtures/data --hoy=2026-10-05   # con datos de prueba
 php build/build.php --noindex              # vista previa: visible pero fuera de Google
 TELEFONO="600 12 34 56" WHATSAPP="600 12 34 56" php build/build.php   # con botones de contacto
-php -S 127.0.0.1:8080 -t dist              # servir la web (el panel queda en /gestion/)
+php -S 127.0.0.1:8080 -t dist scripts/servidor-local.php   # servir la web (panel en /gestion/)
 ```
 
 En local, la configuración está en `var/config.local.php` (no se sube a git) y los emails se guardan como archivos en `var/correo/`.

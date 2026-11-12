@@ -1,0 +1,35 @@
+{% extends 'base.twig' %}
+{% block contenido %}
+<div class="contenedor columnas">
+  <article class="columnas__principal">
+    <header class="cabecera-pagina">
+      <h1>{{ e.nombre_comercial }}</h1>
+      <p class="entradilla">
+        {% if e.base %}{{ e.base.nombre }} ({{ provincia_nombre }}) · trabaja hasta {{ e.radio_km }} km{% endif %}
+        {% if e.destacada %} <span class="etiqueta etiqueta--destacada">Destacada</span>{% endif %}
+        {% if e.verificada %} <span class="etiqueta etiqueta--verificada">Verificada</span>{% endif %}
+      </p>
+    </header>
+    {% if e.servicios %}<ul class="chips">{% for s in e.servicios %}<li class="chip">{{ servicios_lista[s].nombre ?? s }}</li>{% endfor %}</ul>{% endif %}
+    {% if e.descripcion %}<div class="prosa"><p>{{ e.descripcion|nl2br }}</p></div>{% endif %}
+    {% if e.destacada and (e.telefono or e.web) %}
+    <dl class="ficha ficha--datos">
+      {% if e.telefono %}<dt>Teléfono</dt><dd><a href="tel:{{ e.telefono }}">{{ e.telefono }}</a></dd>{% endif %}
+      {% if e.web %}<dt>Web</dt><dd><a href="{{ e.web }}" rel="sponsored noopener" target="_blank">{{ e.web|replace({'https://': '', 'http://': ''})|trim('/') }}</a></dd>{% endif %}
+    </dl>
+    {% endif %}
+    <p class="nota">
+      {% if e.origen == 'auto' and not e.verificada %}Ficha creada por AguaSinCal con datos públicos de la empresa. <a href="/empresas/acceso/?empresa={{ e.slug|url_encode }}">¿Es tu empresa? Gestiona la ficha</a>.
+      {% else %}<a href="/empresas/acceso/?empresa={{ e.slug|url_encode }}">¿Es tu empresa? Edita la ficha</a>.{% endif %}
+    </p>
+    {% if ruta_municipio %}<p><a href="{{ ruta_municipio }}">Más empresas en {{ e.base.nombre }} y alrededores</a></p>{% endif %}
+  </article>
+  <aside class="columnas__lateral">
+    <div class="tarjeta pegajosa">
+      <h2 class="lateral__titulo">Pide presupuesto a {{ e.nombre_comercial }}</h2>
+      <p>Gratis y sin compromiso. Te contestará la empresa.</p>
+      <p><a class="boton boton--ancho" href="/presupuesto/?empresa={{ e.slug|url_encode }}&amp;servicio={{ (e.servicios|first ?: 'descalcificadores')|url_encode }}&amp;origen={{ pagina.ruta|url_encode }}" rel="nofollow">Pedir presupuesto</a></p>
+    </div>
+  </aside>
+</div>
+{% endblock %}

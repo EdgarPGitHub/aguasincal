@@ -96,6 +96,9 @@ jobs:
         run: |
           mkdir -p paquete
           cp -r app config migrations templates scripts composer.json composer.lock paquete/
+          # Datos que usa PHP: municipios (directorio) y fichas añadidas por nosotros. El resto de data/ no hace falta.
+          mkdir -p paquete/data && cp data/municipios.csv paquete/data/
+          if [ -f data/empresas.csv ]; then cp data/empresas.csv paquete/data/; fi
           composer install --working-dir=paquete --no-dev --optimize-autoloader --no-interaction --no-progress --prefer-dist
 
       - name: Escribir config.local.php
@@ -158,6 +161,7 @@ jobs:
           comprobar /descalcificadores/ 200
           comprobar "/presupuesto/?servicio=descalcificadores&tipo=particular&cp=08201" 200 "Revisa que PHP tenga activadas pdo_sqlite, sqlite3 y mbstring (cPanel → Seleccionar versión de PHP)."
           [ "$PANEL_ACTIVO" = "si" ] && comprobar "/$PANEL_RUTA/" 303
+          comprobar /empresas/ 200 "El directorio no responde: revisa el log de PHP del servidor."
           comprobar /_app.php 403
           comprobar /_build.json 403
           comprobar /noexiste-xyz/ 404

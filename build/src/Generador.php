@@ -440,6 +440,7 @@ final class Generador
                     'ruta_provincia' => $rutaProv,
                     'provincia_nombre' => $prov['nombre'],
                     'faq' => $this->preguntasMunicipio($m),
+                    'ruta_empresas' => '/empresas/' . $prov['slug'] . '/' . $m['slug'] . '/',
                     'cubierta' => $cubierta,
                 ], true, 'dureza-municipio', $m['fecha']);
             }
@@ -668,7 +669,7 @@ final class Generador
     private function escribirPhp(string $salida): void
     {
         $origen = $this->app->raiz . '/app/public';
-        foreach (['presupuesto/index.php', 'accion/index.php', 'api/evento.php'] as $archivo) {
+        foreach (['presupuesto/index.php', 'accion/index.php', 'api/evento.php', 'empresas/index.php'] as $archivo) {
             if (!is_dir(dirname($salida . '/' . $archivo))) {
                 mkdir(dirname($salida . '/' . $archivo), 0755, true);
             }
@@ -705,6 +706,7 @@ final class Generador
             file_put_contents("$salida/sitemap-$nombre.xml", $xml);
             $indice[] = "sitemap-$nombre.xml";
         }
+        $indice[] = 'sitemap-empresas.xml'; // lo genera PHP (directorio)
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
         foreach ($indice as $archivo) {
             $xml .= '  <sitemap><loc>' . $this->site['url'] . '/' . $archivo . "</loc></sitemap>\n";
@@ -716,9 +718,9 @@ final class Generador
     {
         if (!empty($this->opciones['noindex'])) {
             // Vista previa: se deja rastrear para que Google vea el noindex (y retire URLs antiguas), sin sitemap.
-            return "User-agent: *\nDisallow: /presupuesto/\nDisallow: /accion/\nDisallow: /api/\n";
+            return "User-agent: *\nDisallow: /presupuesto/\nDisallow: /accion/\nDisallow: /api/\nDisallow: /empresas/editar/\nDisallow: /empresas/acceso/\n";
         }
-        return "User-agent: *\nDisallow: /presupuesto/\nDisallow: /accion/\nDisallow: /api/\n\nSitemap: {$this->site['url']}/sitemap.xml\n";
+        return "User-agent: *\nDisallow: /presupuesto/\nDisallow: /accion/\nDisallow: /api/\nDisallow: /empresas/editar/\nDisallow: /empresas/acceso/\n\nSitemap: {$this->site['url']}/sitemap.xml\n";
     }
 
     private function htaccess(): string
@@ -761,6 +763,10 @@ final class Generador
             RewriteRule (^|/)\.(?!well-known/) - [F]
             RewriteRule (^|/)_ - [F]
             RewriteRule \.(sqlite|sql|log|md|lock|dist|bak|ini|sh)$ - [F,NC]
+            # Directorio de empresas: páginas PHP
+            RewriteRule ^sitemap-empresas\.xml$ empresas/index.php [L]
+            RewriteCond %{REQUEST_FILENAME} !-f
+            RewriteRule ^empresas?/ empresas/index.php [L]
             </IfModule>
 
             $redirecciones<IfModule mod_headers.c>

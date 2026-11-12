@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace AguaSinCal\Controladores;
 
 use AguaSinCal\App;
+use AguaSinCal\Directorio;
 use AguaSinCal\Cobertura;
 use AguaSinCal\Consentimiento;
 use AguaSinCal\Http;
@@ -57,7 +58,15 @@ final class Panel
                 echo $this->cobertura();
                 break;
             case 'profesionales':
-                echo $this->render('panel/profesionales.twig', ['profesionales' => $this->app->profesionales()->todos()]);
+                $filtro = isset(Directorio::FICHAS[$_GET['ficha'] ?? '']) ? $_GET['ficha'] : null;
+                $todas = array_map(fn ($p) => $this->app->directorio()->completar($p), $this->app->profesionales()->todos());
+                echo $this->render('panel/profesionales.twig', [
+                    'profesionales' => $filtro ? array_values(array_filter($todas, fn ($p) => $p['ficha'] === $filtro)) : $todas,
+                    'filtro' => $filtro,
+                    'pendientes' => count(array_filter($todas, fn ($p) => $p['ficha'] === 'pendiente')),
+                    'fichas' => Directorio::FICHAS,
+                    'hoy' => (new \DateTimeImmutable('now', new \DateTimeZone('Europe/Madrid')))->format('Y-m-d'),
+                ]);
                 break;
             case 'profesional':
                 echo $this->profesional(isset($_GET['id']) ? (int) $_GET['id'] : null);
@@ -369,24 +378,57 @@ final class Panel
         ]);
     }
 
+    /** Alta y edición de una empresa: datos internos (leads) y ficha pública del directorio. */
     private function profesional(?int $id): string
     {
         $repo = $this->app->profesionales();
-        $profesional = $id !== null ? $repo->obtener($id) : null;
+        $directorio = $this->app->directorio();
+        $profesional = $id !== null ? $directorio->porId($id) : null;
         if ($id !== null && $profesional === null) {
             http_response_code(404);
-            return $this->render('panel/mensaje.twig', ['mensaje' => 'Profesional no encontrado.']);
+            return $this->render('panel/mensaje.twig', ['mensaje' => 'Empresa no encontrada.']);
         }
         $errores = [];
-        $datos = $profesional ?? ['nombre_comercial' => '', 'razon_social' => '', 'email' => '', 'whatsapp' => '', 'precio_lead' => 0, 'notas' => '', 'activo' => 1];
+        $sugerencias = [];
+        $datos = $profesional ?? ['nombre_comercial' => '', 'razon_social' => '', 'email' => '', 'whatsapp' => '', 'precio_lead' => 0, 'notas' => '',
+            'activo' => 1, 'servicios' => [], 'radio_km' => 25, 'origen' => 'propia', 'ficha' => 'oculta', 'destacada_hasta' => '', 'prioridad' => 0,
+            'verificada' => 0, 'descripcion' => '', 'web' => '', 'telefono' => '', 'base' => null];
+        $datos['municipio_texto'] ??= $profesional['base']['nombre'] ?? '';
+        $datos['provincia'] ??= $profesional['base']['provincia'] ?? '';
         if (Http::esPost()) {
-            [$datos, $errores] = Profesionales::validar($_POST);
+            [$internos, $errores] = Profesionales::validar($_POST);
+            $admin = [
+                'origen' => isset(Directorio::ORIGENES[$_POST['origen'] ?? '']) ? $_POST['origen'] : 'propia',
+                'ficha' => isset(Directorio::FICHAS[$_POST['ficha'] ?? '']) ? $_POST['ficha'] : 'oculta',
+                'destacada_hasta' => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($_POST['destacada_hasta'] ?? '')) ? $_POST['destacada_hasta'] : null,
+                'prioridad' => max(-10, min(10, (int) ($_POST['prioridad'] ?? 0))),
+                'verificada' => !empty($_POST['verificada']) ? 1 : 0,
+            ];
+            // La ficha pública solo se valida si se publica o si se ha rellenado el municipio.
+            $conFicha = $admin['ficha'] !== 'oculta' || trim((string) ($_POST['municipio'] ?? '')) !== '' || !empty($_POST['municipio_ine']);
+            $publicos = null;
+            if ($conFicha) {
+                [$publicos, $erroresFicha, $sugerencias] = $directorio->validarFicha($_POST, false);
+                unset($erroresFicha['email']);
+                $errores += $erroresFicha;
+            }
             if (!$errores) {
-                $repo->guardar($id, $datos);
+                $nuevoId = $repo->guardar($id, $internos);
+                if ($publicos !== null) {
+                    $directorio->actualizarFicha($nuevoId, $publicos);
+                }
+                $directorio->guardarAdmin($nuevoId, $admin);
                 Http::redirigir($this->base . '?r=profesionales');
             }
+            $datos = $internos + $admin + ($publicos ?? []) + ['servicios' => (array) ($_POST['servicios'] ?? []), 'municipio_texto' => (string) ($_POST['municipio'] ?? ''),
+                'provincia' => (string) ($_POST['provincia'] ?? ''), 'descripcion' => (string) ($_POST['descripcion'] ?? ''), 'web' => (string) ($_POST['web'] ?? ''),
+                'telefono' => (string) ($_POST['telefono'] ?? ''), 'radio_km' => (int) ($_POST['radio_km'] ?? 25), 'slug' => $profesional['slug'] ?? null];
         }
-        return $this->render('panel/profesional.twig', ['datos' => $datos, 'id' => $id, 'errores' => $errores]);
+        return $this->render('panel/profesional.twig', [
+            'datos' => $datos, 'id' => $id, 'errores' => $errores, 'sugerencias' => $sugerencias,
+            'servicios_lista' => $this->app->servicios(), 'radios' => Directorio::RADIOS, 'provincias' => $this->app->provincias()->todas(),
+            'origenes' => Directorio::ORIGENES, 'fichas' => Directorio::FICHAS,
+        ]);
     }
 
     private function clics(): string

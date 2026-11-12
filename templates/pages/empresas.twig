@@ -1,0 +1,43 @@
+{% extends 'base.twig' %}
+{% block contenido %}
+<div class="contenedor">
+  <header class="cabecera-pagina">
+    <h1>{{ pagina.titulo }}</h1>
+    <p class="entradilla">Empresas de descalcificadores, ósmosis inversa, filtros y fuentes de agua. Busca tu municipio y verás las que trabajan allí, de más cerca a más lejos.</p>
+  </header>
+  <form class="buscador buscador--grande" action="/empresas/" method="get" role="search">
+    <label for="buscar-empresas">¿Dónde lo necesitas?</label>
+    <div class="buscador__fila">
+      <input id="buscar-empresas" name="q" type="search" placeholder="Escribe tu municipio" value="{{ q }}" required>
+      <button class="boton" type="submit">Buscar</button>
+    </div>
+  </form>
+
+  {% if q %}
+  <section class="bloque">
+    {% if resultados %}
+      <h2>Municipios que coinciden con «{{ q }}»</h2>
+      <ul class="lista-columnas">{% for r in resultados %}<li><a href="{{ r.ruta }}">{{ r.nombre }}</a> <small>{{ provincias[r.provincia].nombre ?? '' }}</small></li>{% endfor %}</ul>
+    {% else %}
+      <p class="aviso">No encontramos «{{ q }}». Prueba con otro nombre o con el municipio más cercano.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if bases %}
+  <section class="bloque">
+    <h2>Municipios con empresas</h2>
+    {% for codigo, lista in bases %}
+      <h3>{{ provincias[codigo].nombre ?? codigo }}</h3>
+      <ul class="lista-columnas">{% for b in lista %}<li><a href="{{ b.ruta }}">{{ b.m.nombre }}</a> <small>{{ b.n }}</small></li>{% endfor %}</ul>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <section class="bloque tarjeta cta-empresa">
+    <h2>¿Tienes una empresa de tratamiento de agua?</h2>
+    <p>Publica tu ficha gratis: aparecerás en los municipios donde trabajas y te llegarán por email las solicitudes de los clientes. Revisamos cada alta a mano.</p>
+    <p><a class="boton" href="/empresas/alta/">Dar de alta mi empresa</a> <a class="enlace" href="/empresas/acceso/">Ya tengo ficha: editarla</a></p>
+  </section>
+</div>
+{% endblock %}

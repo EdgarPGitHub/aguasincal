@@ -72,6 +72,10 @@ final class Comprobaciones
             if ($limpia === '' || str_starts_with($limpia, '//')) {
                 continue;
             }
+            // Rutas que resuelve PHP (directorio de empresas).
+            if (!isset($validas[$limpia]) && preg_match('#^/empresas?/[a-z0-9-]+/([a-z0-9-]+/)?$#', $limpia)) {
+                continue;
+            }
             if (!isset($validas[$limpia])) {
                 $this->informe->error("Enlace roto en $ruta → $url");
                 continue;

@@ -20,6 +20,7 @@ final class App
     private ?PDO $pdo = null;
     private ?Environment $twig = null;
     private ?Provincias $provincias = null;
+    private ?Municipios $municipios = null;
     private ?string $claveCache = null;
 
     public function __construct(
@@ -164,8 +165,24 @@ final class App
                 @chmod(substr($dsn, 7), 0600);
             }
             Db::migrar($this->pdo, $this->raiz . '/migrations');
+            // Fichas del directorio añadidas por nosotros (solo hace algo cuando cambia data/empresas.csv).
+            try {
+                (new Directorio($this->pdo, $this->municipios(), $this->servicios()))->importar($this->raiz . '/data/empresas.csv');
+            } catch (\Throwable $e) {
+                error_log('[directorio] No se pudo importar data/empresas.csv: ' . $e->getMessage());
+            }
         }
         return $this->pdo;
+    }
+
+    public function municipios(): Municipios
+    {
+        return $this->municipios ??= new Municipios($this->raiz . '/data/municipios.csv', $this->esProduccion() ? $this->datos . '/cache' : null);
+    }
+
+    public function directorio(): Directorio
+    {
+        return new Directorio($this->db(), $this->municipios(), $this->servicios());
     }
 
     public function provincias(): Provincias

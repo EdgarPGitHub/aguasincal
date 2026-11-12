@@ -36,6 +36,16 @@ final class Provincias
         return $this->datos[$codigo]['slug'] ?? $codigo;
     }
 
+    public function porSlug(string $slug): ?string
+    {
+        foreach ($this->datos as $codigo => $p) {
+            if ($p['slug'] === $slug) {
+                return sprintf('%02d', (int) $codigo);
+            }
+        }
+        return null;
+    }
+
     /** @return array<string, array{nombre:string, slug:string, ccaa:string}> */
     public function todas(): array
     {

@@ -7,3 +7,5 @@ config.local.php
 *.sqlite
 *.sqlite-*
 .env
+data/sinac-p*.jsonl
+data/*.tmp

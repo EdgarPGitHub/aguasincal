@@ -1,0 +1,58 @@
+# Datos del agua: cada lunes actualiza desde el SINAC los municipios con datos más antiguos (hasta 2 horas),
+# guarda data/sinac.jsonl en main y, si la publicación automática está activada, despliega la web.
+# Sin intervención: si el SINAC falla, la ejecución sale en rojo (GitHub avisa por email) y la web sigue con los datos anteriores.
+name: Datos del agua (SINAC)
+
+on:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      minutos:
+        description: 'Minutos máximos de descarga'
+        default: '120'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: datos-agua
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: curl, mbstring
+          coverage: none
+
+      - name: Descargar del SINAC lo más antiguo
+        run: php scripts/sinac.php --minutos=${{ inputs.minutos || '120' }}
+
+      - name: Guardar en main
+        id: guardar
+        run: |
+          if git diff --quiet -- data/sinac.jsonl && [ -z "$(git ls-files --others --exclude-standard data/sinac.jsonl)" ]; then
+            echo "cambios=no" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          git config user.name "aguasincal-datos"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/sinac.jsonl
+          git commit -m "Datos del SINAC actualizados"
+          git push origin HEAD:main
+          echo "cambios=si" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar la web con los datos nuevos
+        if: steps.guardar.outputs.cambios == 'si' && vars.DESPLIEGUE_ACTIVO == 'si'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main

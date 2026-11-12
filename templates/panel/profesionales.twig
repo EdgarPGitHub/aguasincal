@@ -1,20 +1,31 @@
 {% extends 'panel/layout.twig' %}
-{% block titulo %}Profesionales{% endblock %}
+{% block titulo %}Empresas{% endblock %}
 {% block contenido %}
-<h1>Profesionales</h1>
-<p><a class="boton" href="{{ base }}?r=profesional">+ Nuevo profesional</a></p>
+<h1>Empresas</h1>
+<p class="nota">Cada empresa puede tener ficha pública en el directorio y recibir leads (cobertura o desde su ficha). Las altas desde la web llegan como «pendiente».</p>
+<p>
+  <a class="boton" href="{{ base }}?r=profesional">+ Nueva empresa</a>
+  <a href="{{ base }}?r=profesionales"{{ filtro is null ? ' aria-current="page"' }}>Todas</a> ·
+  {% for clave, nombre in fichas %}<a href="{{ base }}?r=profesionales&amp;ficha={{ clave }}"{{ filtro == clave ? ' aria-current="page"' }}>{{ nombre }}{% if clave == 'pendiente' and pendientes %} ({{ pendientes }}){% endif %}</a>{{ loop.last ? '' : ' · ' }}{% endfor %}
+</p>
 <div class="tabla-scroll">
-<table class="tabla-panel">
-  <thead><tr><th>Nombre comercial</th><th>Razón social</th><th>Email</th><th>WhatsApp</th><th>€/lead</th><th>Estado</th><th></th></tr></thead>
+<table class="tabla-panel" data-ordenable>
+  <thead><tr><th>Nombre comercial</th><th>Municipio</th><th>Ficha</th><th>Origen</th><th>Destacada hasta</th><th>Email</th><th>€/lead</th><th>Leads</th><th></th></tr></thead>
   <tbody>
   {% for p in profesionales %}
     <tr>
-      <td>{{ p.nombre_comercial }}</td><td>{{ p.razon_social ?: '–' }}</td><td>{{ p.email ?: '–' }}</td><td>{{ p.whatsapp ?: '–' }}</td>
-      <td>{{ p.precio_lead|num(2) }}</td><td>{{ p.activo ? 'Activo' : 'Inactivo' }}</td>
+      <td>{{ p.nombre_comercial }}{% if p.verificada %} <span class="etiqueta">verificada</span>{% endif %}</td>
+      <td>{{ p.base.nombre ?? '–' }}</td>
+      <td>{% if p.ficha == 'publicada' and p.slug %}<a href="/empresa/{{ p.slug }}/" target="_blank" rel="noopener">publicada</a>{% else %}{{ p.ficha }}{% endif %}</td>
+      <td>{{ p.origen }}</td>
+      <td>{% if p.destacada_hasta %}<span class="{{ p.destacada_hasta >= hoy ? 'estado estado--enviado' : 'estado estado--invalido' }}">{{ p.destacada_hasta|date('d/m/Y') }}</span>{% else %}–{% endif %}</td>
+      <td>{{ p.email ?: '–' }}</td>
+      <td>{{ p.precio_lead|num(2) }}</td>
+      <td>{{ p.activo ? 'Sí' : 'No' }}</td>
       <td><a href="{{ base }}?r=profesional&amp;id={{ p.id }}">Editar</a></td>
     </tr>
   {% else %}
-    <tr><td colspan="7">Todavía no hay profesionales.</td></tr>
+    <tr><td colspan="9">Todavía no hay empresas.</td></tr>
   {% endfor %}
   </tbody>
 </table>

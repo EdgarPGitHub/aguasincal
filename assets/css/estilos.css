@@ -335,3 +335,26 @@ input[type="checkbox"] { width: 20px; height: 20px; flex: none; margin: 2px 0 0;
 
 @media print { .cabecera, .barra-movil, .pie, .columnas__lateral { display: none; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+
+/* Directorio de empresas */
+.empresas { list-style: none; padding: 0; margin: 16px 0; display: grid; gap: 12px; }
+.empresa { border: 1px solid var(--linea); border-radius: var(--radio); padding: 16px 18px; background: #fff; }
+.empresa--destacada { border-color: #f0c87a; background: #fffbf2; }
+.empresa__cabecera { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.empresa__nombre { margin: 0; font-size: 1.15rem; }
+.empresa__nombre a { text-decoration: none; color: var(--tinta); }
+.empresa__nombre a:hover { text-decoration: underline; }
+.empresa__lugar { margin: 2px 0 6px; color: var(--tinta-2); font-size: .95rem; }
+.empresa__texto { margin: 8px 0 0; font-size: .97rem; }
+.empresa__acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0 0; }
+.etiqueta--destacada { background: #fdf0d2; color: #7a5200; }
+.etiqueta--verificada { background: var(--ok-suave); color: var(--ok); }
+.chips--peque .chip { font-size: .8rem; padding: 2px 9px; font-weight: 500; }
+.filtros a { font-size: .9rem; padding: 4px 12px; border: 1px solid var(--linea); border-radius: 999px; text-decoration: none; color: var(--tinta-2); }
+.filtros a[aria-current="page"] { background: var(--marca); border-color: var(--marca); color: #fff; }
+.opciones { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 16px; margin-top: 6px; }
+.opcion { display: flex; gap: 8px; align-items: center; font-size: .97rem; }
+.sugerencias { border: 1px solid #f0c87a; background: #fffbf2; border-radius: var(--radio); padding: 10px 14px; }
+fieldset.campo { border: 0; padding: 0; margin: 0 0 16px; }
+fieldset.campo legend { font-weight: 600; font-size: .95rem; margin-bottom: 4px; }
+.cta-empresa { margin-top: 32px; background: var(--fondo-suave); box-shadow: none; }

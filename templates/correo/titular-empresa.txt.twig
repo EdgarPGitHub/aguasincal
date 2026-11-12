@@ -1,0 +1,34 @@
+{% if tipo == 'alta' -%}
+Nueva empresa pendiente de revisión.
+{%- elseif tipo == 'reclamacion' -%}
+Alguien quiere gestionar una ficha del directorio con un email que no es el de la ficha.
+{%- else -%}
+La empresa ha actualizado su ficha (ya está visible con los cambios).
+{%- endif %}
+
+
+Empresa: {{ empresa.nombre_comercial }}{% if empresa.razon_social %} ({{ empresa.razon_social }}){% endif %}
+
+Municipio: {{ empresa.base.nombre ?? '–' }}{% if empresa.base %} ({{ provincias[empresa.base.provincia].nombre ?? empresa.base.provincia }}){% endif %} · radio {{ empresa.radio_km }} km
+Servicios: {% for s in empresa.servicios %}{{ servicios[s].nombre ?? s }}{{ loop.last ? '' : ', ' }}{% endfor %}
+
+Email de la ficha: {{ empresa.email ?: '–' }} · Teléfono: {{ empresa.telefono ?: '–' }} · Web: {{ empresa.web ?: '–' }}
+Descripción:
+{{ empresa.descripcion ?: '–' }}
+{% if tipo == 'reclamacion' %}
+
+Email que la reclama: {{ extra.email }}
+{% if extra.mensaje %}Mensaje: {{ extra.mensaje }}
+{% endif %}
+Comprueba que es de la empresa (por ejemplo, que el dominio coincide con su web o llamándoles) antes de aceptar.
+Asignar ese email a la ficha y enviarle el enlace de edición:
+{{ enlaces.asignar }}
+{% endif %}
+{% if tipo == 'alta' %}
+
+Publicar la ficha: {{ enlaces.publicar }}
+Descartar: {{ enlaces.descartar }}
+{% endif %}
+
+Ficha pública: {{ ficha }}
+Panel: {{ enlaces.panel }}

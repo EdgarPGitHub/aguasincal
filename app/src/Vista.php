@@ -17,7 +17,7 @@ final class Vista
     public static function crear(App $app, ?string $cache = null, array $globales = []): Environment
     {
         $twig = new Environment(new FilesystemLoader($app->raiz . '/templates'), [
-            'autoescape' => 'html',
+            'autoescape' => 'name', // HTML escapado; las plantillas .txt (emails) en texto plano
             'cache' => $cache ?? false,
             'strict_variables' => !$app->esProduccion(),
         ]);

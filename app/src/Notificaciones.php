@@ -47,7 +47,7 @@ final class Notificaciones
         $asunto = sprintf(
             'Nuevo cliente AguaSinCal: %s en %s (%s)',
             $this->app->servicios()[$lead['servicio']]['formulario'] ?? $lead['servicio'],
-            $lead['municipio'] !== '' ? $lead['municipio'] : $lead['cp'],
+            $lead['municipio'] !== '' ? $lead['municipio'] : $this->app->provincias()->nombre($lead['provincia']),
             $lead['cp'],
         );
         $texto = $this->app->twig()->render('correo/profesional.txt.twig', ['lead' => $lead, 'profesional' => $profesional] + $this->comun());
@@ -68,6 +68,59 @@ final class Notificaciones
     public function textoWhatsapp(array $lead): string
     {
         return trim($this->app->twig()->render('correo/whatsapp.txt.twig', ['lead' => $lead] + $this->comun()));
+    }
+
+    /** Enlace para editar la ficha (al darse de alta o cuando la empresa lo pide). Abrirlo verifica el email. */
+    public function enlaceEdicionEmpresa(array $empresa, int $ahora, bool $alta): bool
+    {
+        if (!filter_var($empresa['email'], FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+        $token = $this->app->firma()->firmar(['a' => 'editar_empresa', 'e' => (int) $empresa['id']], $ahora + \AguaSinCal\Controladores\Empresas::CADUCIDAD_ENLACE_EDICION);
+        $texto = $this->app->twig()->render('correo/empresa-enlace.txt.twig', [
+            'empresa' => $empresa,
+            'alta' => $alta,
+            'enlace' => $this->app->url('/empresas/editar/?t=' . $token),
+        ] + $this->comun());
+        $asunto = $alta ? 'Confirma tu email y revisa tu ficha en AguaSinCal' : 'Enlace para editar tu ficha en AguaSinCal';
+        return $this->correo->enviar((string) $empresa['email'], $asunto, $texto);
+    }
+
+    public function avisarEmpresaPublicada(array $empresa): bool
+    {
+        if (!filter_var($empresa['email'], FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+        $texto = $this->app->twig()->render('correo/empresa-publicada.txt.twig', [
+            'empresa' => $empresa,
+            'ficha' => $this->app->url('/empresa/' . $empresa['slug'] . '/'),
+            'acceso' => $this->app->url('/empresas/acceso/'),
+        ] + $this->comun());
+        return $this->correo->enviar((string) $empresa['email'], 'Tu ficha ya está publicada en AguaSinCal', $texto, (string) ($this->app->config('site')['email_publico'] ?: null));
+    }
+
+    /** Aviso al titular sobre una ficha: alta nueva, reclamación de una ficha o cambios hechos por la empresa. */
+    public function avisarTitularEmpresa(array $empresa, string $tipo, int $ahora, array $extra = []): bool
+    {
+        $para = (string) $this->app->local('leads_email', '');
+        if ($para === '') {
+            return false;
+        }
+        $caduca = $ahora + self::CADUCIDAD_ENLACES;
+        $firmar = fn (array $datos) => $this->app->url('/accion/?t=' . $this->app->firma()->firmar($datos + ['e' => (int) $empresa['id']], $caduca));
+        $enlaces = ['panel' => $this->app->url($this->app->rutaPanel() . '?r=profesional&id=' . (int) $empresa['id'])];
+        if ($tipo === 'alta') {
+            $enlaces['publicar'] = $firmar(['a' => 'publicar_empresa']);
+            $enlaces['descartar'] = $firmar(['a' => 'descartar_empresa']);
+        } elseif ($tipo === 'reclamacion') {
+            $enlaces['asignar'] = $firmar(['a' => 'asignar_email', 'm' => (string) $extra['email']]);
+        }
+        $asuntos = ['alta' => 'Nueva empresa para revisar', 'reclamacion' => 'Reclamación de ficha', 'cambios' => 'Ficha actualizada por la empresa'];
+        $texto = $this->app->twig()->render('correo/titular-empresa.txt.twig', [
+            'empresa' => $empresa, 'tipo' => $tipo, 'extra' => $extra, 'enlaces' => $enlaces,
+            'ficha' => $this->app->url('/empresa/' . $empresa['slug'] . '/'),
+        ] + $this->comun());
+        return $this->correo->enviar($para, '[AguaSinCal] ' . ($asuntos[$tipo] ?? 'Empresa') . ': ' . $empresa['nombre_comercial'], $texto);
     }
 
     public function enlaceAccion(string $accion, int $leadId, int $caduca): string

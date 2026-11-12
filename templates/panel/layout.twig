@@ -17,7 +17,7 @@
       <a href="{{ base }}"{{ ruta in ['leads', 'lead'] ? ' aria-current="page"' }}>Leads</a>
       <a href="{{ base }}?r=nuevo"{{ ruta == 'nuevo' ? ' aria-current="page"' }}>+ Lead manual</a>
       <a href="{{ base }}?r=cobertura"{{ ruta == 'cobertura' ? ' aria-current="page"' }}>Cobertura</a>
-      <a href="{{ base }}?r=profesionales"{{ ruta in ['profesionales', 'profesional'] ? ' aria-current="page"' }}>Profesionales</a>
+      <a href="{{ base }}?r=profesionales"{{ ruta in ['profesionales', 'profesional'] ? ' aria-current="page"' }}>Empresas</a>
       <a href="{{ base }}?r=clics"{{ ruta == 'clics' ? ' aria-current="page"' }}>Clics</a>
       <a href="{{ base }}?r=clave"{{ ruta == 'clave' ? ' aria-current="page"' }}>Contraseña</a>
       <form method="post" action="{{ base }}?r=salir"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="enlace" type="submit">Salir</button></form>

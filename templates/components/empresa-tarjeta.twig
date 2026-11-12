@@ -1,0 +1,16 @@
+{#- Tarjeta de una empresa en un listado. Variables: e (con distancia y destacada), m (municipio del listado, opcional). -#}
+<li class="empresa{{ e.destacada ? ' empresa--destacada' }}">
+  <div class="empresa__cabecera">
+    <h3 class="empresa__nombre"><a href="/empresa/{{ e.slug }}/">{{ e.nombre_comercial }}</a></h3>
+    {% if e.destacada %}<span class="etiqueta etiqueta--destacada">Destacada</span>{% endif %}
+    {% if e.verificada %}<span class="etiqueta etiqueta--verificada" title="La empresa ha confirmado sus datos">Verificada</span>{% endif %}
+  </div>
+  <p class="empresa__lugar">{{ e.base.nombre ?? '' }}{% if m is defined and m and e.distancia > 0 %} · a {{ e.distancia|num }} km{% endif %}</p>
+  {% if e.servicios %}<ul class="chips chips--peque">{% for s in e.servicios %}<li class="chip">{{ servicios_lista[s].nombre ?? s }}</li>{% endfor %}</ul>{% endif %}
+  {% if e.descripcion %}<p class="empresa__texto">{{ e.descripcion|length > 220 ? e.descripcion|slice(0, 220)|trim ~ '…' : e.descripcion }}</p>{% endif %}
+  <p class="empresa__acciones">
+    <a class="boton boton--peque" href="/presupuesto/?empresa={{ e.slug|url_encode }}&amp;servicio={{ (e.servicios|first ?: 'descalcificadores')|url_encode }}&amp;origen=/empresa/{{ e.slug|url_encode }}/" rel="nofollow">Pedir presupuesto</a>
+    {% if e.destacada and e.telefono %}<a class="boton boton--peque boton--sec" href="tel:{{ e.telefono }}">Llamar</a>{% endif %}
+    {% if e.destacada and e.web %}<a class="enlace" href="{{ e.web }}" rel="sponsored noopener" target="_blank">Web</a>{% endif %}
+  </p>
+</li>

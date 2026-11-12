@@ -63,6 +63,8 @@
       {% include 'components/calculadora.twig' with {fh: m.dureza_fh, dimensionados: m.dimensionados} only %}
     </section>
 
+    <p class="aviso"><a href="{{ ruta_empresas }}">Empresas de tratamiento de agua que trabajan en {{ m.nombre }}</a>: descalcificadores, ósmosis y filtros, ordenadas por cercanía.</p>
+
     {% if m.servicio_ciudad %}
     <p class="aviso aviso--ok">Atendemos {{ m.nombre }}: <a href="{{ m.servicio_ciudad.ruta }}">{{ m.servicio_ciudad.titulo }}</a>.</p>
     {% endif %}

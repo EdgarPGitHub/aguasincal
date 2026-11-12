@@ -1,0 +1,19 @@
+Hola:
+
+{% if alta -%}
+Hemos recibido el alta de {{ empresa.nombre_comercial }} en el directorio de AguaSinCal.
+
+Abre este enlace para confirmar tu email y revisar la ficha (caduca en 3 días):
+{{ enlace }}
+
+Revisamos cada alta a mano antes de publicarla, normalmente en 1 o 2 días laborables. Te avisaremos cuando esté publicada.
+{%- else -%}
+Este es el enlace para editar la ficha de {{ empresa.nombre_comercial }} en AguaSinCal (caduca en 3 días):
+{{ enlace }}
+{%- endif %}
+
+
+Si no has pedido esto, ignora este mensaje: sin el enlace nadie puede cambiar la ficha.
+
+--
+AguaSinCal · {{ site.url }}
