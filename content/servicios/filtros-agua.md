@@ -3,12 +3,12 @@ servicio: filtros-agua
 orden: 3
 titulo: Filtros de agua para casa y negocio
 nombre_corto: Filtros de agua
-seo_title: "Filtros de agua: generales, de carbón y para electrodomésticos | AguaSinCal"
+seo_title: "Filtros de agua para casa y negocio | AguaSinCal"
 descripcion: "Presupuesto gratis de filtros de agua: filtro general de entrada, carbón activo, sedimentos y protección de calderas y cafeteras. Profesionales en Cataluña y Málaga."
 entradilla: "Para quitar arenilla, cloro y malos sabores, o proteger un equipo concreto sin instalar un descalcificador."
 resumen: "Filtros de entrada, de carbón activo y de protección para calderas, cafeteras y lavavajillas."
 ruta: /filtros-agua/
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

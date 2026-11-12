@@ -112,10 +112,9 @@ final class Generador
             $fm['revisado_por'] = $this->site['revisor_tecnico']['nombre'];
             $fm['revisor_cargo'] = trim($this->site['revisor_tecnico']['cargo'] . ($this->site['revisor_tecnico']['empresa'] !== '' ? ' en ' . $this->site['revisor_tecnico']['empresa'] : ''));
         }
-        $necesitaRevision = in_array($doc['tipo'], ['servicios', 'ciudades', 'guias'], true);
-        if ($necesitaRevision && ($fm['estado'] ?? '') === 'publicado' && empty($fm['revisado_por'])) {
-            $fm['estado'] = 'borrador';
-            $this->informe->aviso(basename($doc['archivo']) . ': sin revisor técnico, se publica como borrador (noindex).');
+        // Sin revisor técnico, los contenidos van firmados por la marca (con fuentes y metodología públicas).
+        if (in_array($doc['tipo'], ['servicios', 'ciudades', 'guias'], true) && empty($fm['revisado_por'])) {
+            $fm['autor'] = 'Equipo AguaSinCal';
         }
         $fm['indexable'] = ($fm['estado'] ?? '') === 'publicado' && ($fm['indexable'] ?? true) !== false;
     }
@@ -149,6 +148,7 @@ final class Generador
             'actualizado' => $fm['actualizado'] ?? '',
             'revisado_por' => $fm['revisado_por'] ?? '',
             'revisor_cargo' => $fm['revisor_cargo'] ?? '',
+            'autor' => $fm['autor'] ?? '',
             'cta' => $fm['cta'] ?? null,
             'breadcrumbs' => $migas,
             'schema' => $this->schemaMigas($migas),
@@ -266,7 +266,7 @@ final class Generador
         $this->registrar('/guias/', 'pages/guias.twig', [
             'pagina' => [
                 'titulo' => 'Guías sobre agua dura, descalcificadores y ósmosis',
-                'seo_title' => 'Guías: descalcificadores, ósmosis, filtros y mantenimiento | AguaSinCal',
+                'seo_title' => 'Guías de descalcificadores, ósmosis y filtros | AguaSinCal',
                 'descripcion' => 'Precios, averías, mantenimiento y cómo elegir descalcificador, ósmosis inversa o fuente de agua. Guías revisadas por técnicos.',
                 'entradilla' => 'Respuestas claras, revisadas por técnicos que instalan y reparan estos equipos cada día.',
                 'breadcrumbs' => [['nombre' => 'Guías', 'ruta' => '/guias/']],

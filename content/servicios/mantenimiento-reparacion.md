@@ -3,12 +3,12 @@ servicio: mantenimiento-reparacion
 orden: 5
 titulo: Mantenimiento y reparación de descalcificadores y ósmosis
 nombre_corto: Mantenimiento y reparación
-seo_title: "Reparación y mantenimiento de descalcificadores y ósmosis, multimarca | AguaSinCal"
-descripcion: "Servicio técnico multimarca para descalcificadores, ósmosis inversa, filtros y fuentes de agua: revisiones, cambio de filtros, desinfección y averías en Cataluña y Málaga."
+seo_title: "Reparación de descalcificadores y ósmosis, multimarca"
+descripcion: "Servicio técnico multimarca de descalcificadores, ósmosis, filtros y fuentes de agua: revisiones, cambio de filtros, desinfección y averías."
 entradilla: "Servicio técnico independiente y multimarca: revisiones anuales, cambio de filtros y reparación de averías."
 resumen: "Revisión anual, cambio de filtros y reparación de averías de cualquier marca."
 ruta: /mantenimiento-reparacion/
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

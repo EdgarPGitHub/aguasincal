@@ -5,16 +5,26 @@ descripcion: "Fuentes oficiales, escala de dureza y supuestos de cálculo que us
 entradilla: "Fuentes, escala y supuestos que usamos en las fichas de cada municipio."
 ruta: /metodologia-datos/
 estado: publicado
-actualizado: 2026-10-05
+actualizado: 2026-11-12
 ---
 
 ## Fuentes
 
 - **Calidad del agua:** Sistema de Información Nacional de Aguas de Consumo (**SINAC**), del Ministerio de Sanidad. Las empresas que gestionan el abastecimiento están obligadas a publicar en él los análisis de cada zona de abastecimiento.
 - **Municipios y población:** Instituto Nacional de Estadística (**INE**).
-- **Coordenadas de municipios:** Instituto Geográfico Nacional (**IGN/CNIG**).
+- **Coordenadas de municipios:** centro del término municipal, calculado con los límites municipales del Instituto Geográfico Nacional (**IGN**).
 
-Cuando un municipio tiene varias zonas de abastecimiento, mostramos la dureza de cada una y la media. Junto a cada dato indicamos la fecha de la última muestra publicada. Solo creamos ficha propia de los municipios con muestras de los últimos 24 meses.
+Consultamos el SINAC de forma periódica: cada semana se actualizan los municipios cuyos datos son más antiguos. Junto a cada dato indicamos la fecha de la muestra y la de la consulta. Solo creamos ficha propia de los municipios de 1.000 habitantes o más con muestras de los últimos 24 meses.
+
+## Cómo calculamos la dureza de un municipio
+
+Un municipio puede recibir agua de varias **redes de abastecimiento** (zonas), cada una con su origen y su tratamiento. Para cada red tomamos el último valor de **dureza total** publicado en el SINAC. Si una red no publica la dureza pero sí el calcio y el magnesio, la calculamos con la fórmula habitual: dureza (mg/L de CaCO₃) = 2,497 × calcio + 4,118 × magnesio. Lo indicamos con un asterisco.
+
+La dureza del municipio es la **media ponderada por la población** que abastece cada red, y mostramos también el valor de cada zona. Descartamos las redes que no abastecen a población (aeropuertos, industrias, puertos). El resto de parámetros (nitratos, sodio, pH, etc.) se calculan igual y se comparan con los valores paramétricos del **Real Decreto 3/2023**.
+
+## Cómo elaboramos las guías
+
+Las guías y las páginas de servicio las escribe el equipo de AguaSinCal con información de la normativa, de los datos oficiales y de la documentación técnica de los fabricantes. No incluimos precios ni cifras que no podamos respaldar. Si un técnico revisa una guía, aparece su nombre. Si ves un error, escríbenos a %titular.email% y lo corregimos.
 
 ## Unidades
 

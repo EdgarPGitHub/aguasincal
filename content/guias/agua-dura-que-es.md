@@ -8,7 +8,7 @@ grupo: Entender el agua
 servicio_form: descalcificadores
 destacada: true
 relacionadas: [/guias/descalcificador-o-osmosis/, /descalcificadores/]
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

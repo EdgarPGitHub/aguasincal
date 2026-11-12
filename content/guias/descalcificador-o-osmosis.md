@@ -8,7 +8,7 @@ grupo: Elegir equipo
 servicio_form: descalcificadores
 destacada: true
 relacionadas: [/guias/agua-dura-que-es/, /osmosis-inversa/, /descalcificadores/]
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

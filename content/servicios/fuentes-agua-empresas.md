@@ -3,12 +3,12 @@ servicio: fuentes-agua-empresas
 orden: 4
 titulo: Fuentes y dispensadores de agua para empresas
 nombre_corto: Fuentes para empresas
-seo_title: "Fuentes de agua para oficinas, gimnasios y negocios: alquiler o compra | AguaSinCal"
-descripcion: "Fuentes y dispensadores de agua osmotizada conectados a la red para oficinas, talleres, consultas, gimnasios y colegios. Alquiler o compra con mantenimiento incluido."
+seo_title: "Fuentes de agua para empresas: alquiler o compra"
+descripcion: "Fuentes y dispensadores de agua osmotizada conectados a la red para oficinas, talleres, clínicas y gimnasios. Alquiler o compra con mantenimiento."
 entradilla: "Agua fría, natural o caliente para tu equipo y tus clientes, conectada a la red: sin garrafas, sin almacén y con mantenimiento incluido."
 resumen: "Dispensadores de agua osmotizada para oficinas, talleres, consultas y gimnasios. Alquiler o compra."
 ruta: /fuentes-agua-empresas/
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

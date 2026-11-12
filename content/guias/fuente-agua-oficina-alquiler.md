@@ -1,14 +1,14 @@
 ---
 titulo: "Fuente de agua para la oficina: garrafa o conectada a la red, alquiler o compra"
 seo_title: "Fuente de agua para oficina: alquiler, compra y tipos | AguaSinCal"
-descripcion: "Cómo elegir una fuente de agua para tu oficina, taller, clínica o gimnasio: de garrafa o conectada a la red, con filtro u ósmosis, y si conviene alquilarla o comprarla."
+descripcion: "Cómo elegir fuente de agua para oficina, taller, clínica o gimnasio: garrafa o conectada a la red, con filtro u ósmosis, y si alquilar o comprar."
 entradilla: "Las fuentes conectadas a la red han sustituido a las de garrafa en la mayoría de oficinas. Te explicamos por qué y cómo elegir."
 ruta: /guias/fuente-agua-oficina-alquiler/
 grupo: Empresas y hostelería
 servicio_form: fuentes-agua-empresas
 destacada: true
 relacionadas: [/fuentes-agua-empresas/, /osmosis-hosteleria/]
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

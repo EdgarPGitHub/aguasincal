@@ -8,7 +8,7 @@ descripcion: "Presupuesto gratis de equipo de ósmosis inversa para vivienda, of
 entradilla: "Agua de grifo con sabor de agua mineral, sin cargar garrafas. Compra o alquiler con mantenimiento incluido."
 resumen: "Agua de calidad para beber y cocinar directamente del grifo. Venta y alquiler para casas y hostelería."
 ruta: /osmosis-inversa/
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

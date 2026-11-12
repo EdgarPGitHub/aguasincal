@@ -5,10 +5,10 @@ municipio_ine: "08019"
 provincia: "08"
 titulo: Descalcificadores en Barcelona
 seo_title: "Descalcificador en Barcelona: instalación y alquiler | AguaSinCal"
-descripcion: "Presupuesto gratis de descalcificador en Barcelona: venta, alquiler, instalación y mantenimiento con un profesional verificado. Datos oficiales de la dureza del agua."
+descripcion: "Presupuesto gratis de descalcificador en Barcelona: venta, alquiler, instalación y mantenimiento con profesional verificado. Dureza oficial del agua."
 entradilla: "Instalación, alquiler y mantenimiento de descalcificadores en Barcelona y su área metropolitana, con un profesional verificado."
 ruta: /descalcificadores/barcelona/
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

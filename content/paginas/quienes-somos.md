@@ -5,7 +5,7 @@ descripcion: "AguaSinCal informa sobre la dureza del agua en España y pone en c
 entradilla: "Un proyecto para que elegir un equipo de tratamiento de agua sea fácil y honesto."
 ruta: /quienes-somos/
 estado: publicado
-actualizado: 2026-10-05
+actualizado: 2026-11-12
 ---
 
 AguaSinCal es un proyecto de **%titular.nombre%** dedicado a dos cosas: explicar con datos oficiales qué agua sale del grifo en cada municipio y poner en contacto a quien necesita un descalcificador, una ósmosis, un filtro o una fuente de agua con un profesional de confianza de su zona.
@@ -13,8 +13,9 @@ AguaSinCal es un proyecto de **%titular.nombre%** dedicado a dos cosas: explicar
 ## Cómo trabajamos
 
 - **Datos oficiales y con fecha.** La dureza y el resto de parámetros salen del Sistema de Información Nacional de Aguas de Consumo (SINAC) del Ministerio de Sanidad. Siempre indicamos de cuándo es la muestra.
-- **Contenido revisado por técnicos.** Las guías de mantenimiento, averías y precios las revisan técnicos que instalan y reparan estos equipos.
-- **Profesionales verificados.** Solo pasamos solicitudes a empresas con las que trabajamos de forma directa y que atienden en la zona.
+- **Guías con fuentes.** Las escribe el equipo de AguaSinCal a partir de la normativa (Real Decreto 3/2023), los datos oficiales y la documentación de fabricantes. Cuando un técnico revisa una guía, su nombre aparece en ella.
+- **Profesionales verificados.** Cuando te asignamos un profesional, es una empresa con la que trabajamos de forma directa y que atiende en tu zona.
+- **Directorio abierto.** En el [directorio de empresas](/empresas/) aparecen también otras empresas de tratamiento de agua, ordenadas por cercanía. Las destacadas lo indican siempre.
 - **Sin presión comercial.** Si en tu zona no hay profesional, te lo decimos.
 
 ## Contacto

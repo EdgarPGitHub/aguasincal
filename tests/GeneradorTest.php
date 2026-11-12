@@ -39,13 +39,17 @@ final class GeneradorTest extends TestCase
         $this->assertStringContainsString('Poblet de Test', $provincia, 'Aparece en la tabla de la provincia');
     }
 
-    public function testBorradoresSonNoindexYNoEstanEnElSitemap(): void
+    public function testPaginasNoIndexablesNoEstanEnElSitemap(): void
     {
-        $guia = (string) file_get_contents(self::$salida . '/guias/descalcificador-no-gasta-sal/index.html');
-        $this->assertStringContainsString('<meta name="robots" content="noindex, follow">', $guia);
+        // Provincia de una zona de trabajo sin municipios con datos: existe (se enlaza) pero no se indexa.
+        $girona = (string) file_get_contents(self::$salida . '/dureza-agua/girona/index.html');
+        $this->assertStringContainsString('<meta name="robots" content="noindex, follow">', $girona);
         $sitemaps = implode('', array_map('file_get_contents', glob(self::$salida . '/sitemap-*.xml')));
-        $this->assertStringNotContainsString('/guias/descalcificador-no-gasta-sal/', $sitemaps);
+        $this->assertStringNotContainsString('/dureza-agua/girona/', $sitemaps);
         $this->assertStringContainsString('/dureza-agua/barcelona/vilaprova-de-mar/', $sitemaps);
+        $this->assertStringContainsString('/guias/descalcificador-no-gasta-sal/', $sitemaps, 'Guías publicadas con firma de la marca');
+        $guia = (string) file_get_contents(self::$salida . '/guias/descalcificador-no-gasta-sal/index.html');
+        $this->assertStringContainsString('Equipo AguaSinCal', $guia);
     }
 
     public function testPaginaDeMunicipio(): void

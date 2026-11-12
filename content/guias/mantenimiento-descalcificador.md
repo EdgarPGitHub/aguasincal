@@ -7,7 +7,7 @@ ruta: /guias/mantenimiento-descalcificador/
 grupo: Averías y mantenimiento
 servicio_form: mantenimiento-reparacion
 relacionadas: [/guias/descalcificador-no-gasta-sal/, /guias/precio-descalcificador/, /mantenimiento-reparacion/]
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

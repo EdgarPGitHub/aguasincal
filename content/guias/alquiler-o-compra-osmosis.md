@@ -1,13 +1,13 @@
 ---
 titulo: "Alquiler o compra de ósmosis y descalcificador: qué compensa"
-seo_title: "¿Alquilar o comprar ósmosis o descalcificador? Cómo comparar | AguaSinCal"
+seo_title: "¿Alquilar o comprar ósmosis o descalcificador? | AguaSinCal"
 descripcion: "Ventajas e inconvenientes de alquilar o comprar un equipo de ósmosis inversa o un descalcificador, para casa y para hostelería, y cómo comparar el coste real."
 entradilla: "La cuota mensual parece más barata y la compra parece más cara. La única forma de saberlo es comparar el coste total a varios años."
 ruta: /guias/alquiler-o-compra-osmosis/
 grupo: Elegir equipo
 servicio_form: osmosis-inversa
 relacionadas: [/osmosis-hosteleria/, /guias/precio-descalcificador/, /osmosis-inversa/]
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

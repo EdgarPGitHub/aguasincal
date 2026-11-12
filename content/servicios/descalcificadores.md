@@ -3,12 +3,12 @@ servicio: descalcificadores
 orden: 1
 titulo: Descalcificadores de agua para casa y empresa
 nombre_corto: Descalcificadores
-seo_title: "Descalcificadores de agua: instalación, alquiler y mantenimiento | AguaSinCal"
-descripcion: "Presupuesto gratis de descalcificador para vivienda, empresa u hostelería. Venta, alquiler, instalación y mantenimiento con profesionales verificados en Cataluña y Málaga."
+seo_title: "Descalcificadores: instalación, alquiler y mantenimiento"
+descripcion: "Presupuesto gratis de descalcificador para casa, empresa u hostelería: venta, alquiler, instalación y mantenimiento con profesionales verificados."
 entradilla: "Protege tuberías, termo, caldera y electrodomésticos de la cal. Compra o alquiler, con instalación y mantenimiento incluidos."
 resumen: "Elimina la cal de toda el agua de la casa o el negocio. Venta y alquiler con instalación y mantenimiento."
 ruta: /descalcificadores/
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

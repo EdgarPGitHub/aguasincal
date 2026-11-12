@@ -8,7 +8,7 @@ seo_title: "Descalcificador en Málaga: instalación y alquiler | AguaSinCal"
 descripcion: "Presupuesto gratis de descalcificador en Málaga capital y la Costa del Sol: venta, alquiler, instalación y mantenimiento con un profesional verificado."
 entradilla: "Descalcificadores para pisos, casas y negocios en Málaga capital y toda la provincia, con instalación y mantenimiento."
 ruta: /descalcificadores/malaga/
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

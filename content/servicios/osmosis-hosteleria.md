@@ -3,12 +3,12 @@ servicio_form: osmosis-inversa
 orden: 6
 titulo: Ósmosis y agua filtrada para hostelería
 nombre_corto: Ósmosis para hostelería
-seo_title: "Ósmosis para restaurantes, bares y hoteles: alquiler o compra | AguaSinCal"
-descripcion: "Equipos de ósmosis inversa y filtración para restaurantes, bares y hoteles: agua filtrada para servir en mesa, cafeteras y máquinas de hielo. Alquiler con mantenimiento."
+seo_title: "Ósmosis para bares, restaurantes y hoteles | AguaSinCal"
+descripcion: "Ósmosis inversa y filtración para restaurantes, bares y hoteles: agua filtrada para servir, cafeteras y máquinas de hielo. Alquiler con mantenimiento."
 entradilla: "Agua filtrada para servir en mesa, café con mejor crema y máquinas protegidas de la cal. En alquiler con mantenimiento incluido o en propiedad."
 resumen: "Agua filtrada para servir en mesa, cafeteras y máquinas de hielo. Alquiler con mantenimiento."
 ruta: /osmosis-hosteleria/
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

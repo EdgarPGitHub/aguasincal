@@ -9,7 +9,7 @@ servicio_form: mantenimiento-reparacion
 cta: "¿No se soluciona? Pide un técnico"
 destacada: true
 relacionadas: [/guias/descalcificador-pierde-agua/, /guias/mantenimiento-descalcificador/, /mantenimiento-reparacion/]
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

@@ -8,7 +8,7 @@ grupo: Averías y mantenimiento
 servicio_form: mantenimiento-reparacion
 destacada: true
 relacionadas: [/guias/osmosis-no-para-de-tirar-agua/, /osmosis-inversa/, /mantenimiento-reparacion/]
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

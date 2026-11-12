@@ -8,7 +8,7 @@ grupo: Averías y mantenimiento
 servicio_form: mantenimiento-reparacion
 cta: "Pide un técnico para revisarlo"
 relacionadas: [/guias/descalcificador-no-gasta-sal/, /mantenimiento-reparacion/]
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---

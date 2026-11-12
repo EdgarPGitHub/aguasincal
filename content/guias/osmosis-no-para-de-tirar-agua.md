@@ -1,14 +1,14 @@
 ---
 titulo: "La ósmosis no para de tirar agua al desagüe: por qué pasa"
 seo_title: "Ósmosis inversa no para de tirar agua: causas y solución | AguaSinCal"
-descripcion: "Si tu equipo de ósmosis tira agua al desagüe sin parar aunque el depósito esté lleno, falla el cierre automático, el antirretorno o la presión del depósito. Te lo explicamos."
+descripcion: "Si tu ósmosis tira agua al desagüe sin parar con el depósito lleno, falla el cierre automático, el antirretorno o la presión del depósito."
 entradilla: "Mientras produce, es normal que tire agua. Si no para nunca, algo falla y estás desperdiciando mucha agua."
 ruta: /guias/osmosis-no-para-de-tirar-agua/
 grupo: Averías y mantenimiento
 servicio_form: mantenimiento-reparacion
 cta: "Pide un técnico para revisar tu ósmosis"
 relacionadas: [/guias/cada-cuanto-cambiar-filtros-osmosis/, /mantenimiento-reparacion/]
-estado: borrador
+estado: publicado
 revision: tecnica
 actualizado: 2026-10-05
 ---
