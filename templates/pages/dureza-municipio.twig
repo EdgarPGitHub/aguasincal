@@ -50,10 +50,10 @@
     {% if m.parametros %}
     <section class="bloque">
       <h2>Composición del agua de {{ m.nombre }}</h2>
-      <p class="nota">Último valor notificado por cada red (media según la población que abastece). El límite es el valor paramétrico del Real Decreto 3/2023.</p>
+      <p class="nota">Último valor notificado por cada red (media según la población que abastece). «No detectado»: por debajo de lo que mide el laboratorio. El límite es el valor paramétrico del Real Decreto 3/2023.</p>
       <div class="tabla-scroll"><table>
         <thead><tr><th scope="col">Parámetro</th><th scope="col">Valor</th><th scope="col">Límite legal</th></tr></thead>
-        <tbody>{% for p in m.parametros %}<tr><th scope="row">{{ p.nombre }}</th><td>{{ p.valor|num(p.valor < 10 ? 2 : (p.valor < 100 ? 1 : 0)) }} {{ p.unidad }}</td><td>{{ p.limite ?? '–' }}</td></tr>{% endfor %}</tbody>
+        <tbody>{% for p in m.parametros %}<tr><th scope="row">{{ p.nombre }}</th><td>{% if p.valor == 0 %}No detectado{% else %}{{ p.valor|num(p.valor < 10 ? 2 : (p.valor < 100 ? 1 : 0)) }} {{ p.unidad }}{% endif %}</td><td>{{ p.limite ?? '–' }}</td></tr>{% endfor %}</tbody>
       </table></div>
     </section>
     {% endif %}

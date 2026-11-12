@@ -174,6 +174,7 @@ final class DatosAgua
                 }
             }
             if ($valores) {
+                $unidad = ['Unidades pH' => '', 'µS/cm a 20ºC' => 'µS/cm', 'µS/cm a 20°C' => 'µS/cm'][$unidad] ?? $unidad;
                 $m['parametros'][] = ['clave' => $clave, 'nombre' => $def['nombre'], 'valor' => self::ponderada($valores), 'unidad' => $unidad, 'limite' => $def['limite']];
             }
         }
@@ -209,7 +210,8 @@ final class DatosAgua
             'osmosis_planta' => $osmosis,
             'precio_m3' => $precios ? round(self::ponderada($precios), 2) : null,
             'control' => $control ? ['fecha' => $control[0], 'apta' => $control[1]] : null,
-            'langelier' => isset($principal['parametros']['langelier']) ? (float) $principal['parametros']['langelier'][0] : null,
+            // Un 0 exacto suele ser «sin dato» en el SINAC: solo se muestra si hay valor.
+            'langelier' => !empty($principal['parametros']['langelier'][0]) ? (float) $principal['parametros']['langelier'][0] : null,
             'consultado' => $d['consultado'] ?? null,
         ];
     }
