@@ -13,7 +13,7 @@ Qué falta por hacer y qué se te pedirá en cada paso: [docs/PASOS.md](docs/PAS
 ```
 config/       datos del sitio, servicios, provincias, zonas publicadas, precios, redirecciones
 content/      textos en Markdown con front matter: paginas/, servicios/, ciudades/, guias/
-data/         municipios.csv (INE) y agua.csv (SINAC) normalizados
+data/         municipios.csv (INE + IGN) y sinac.jsonl (datos del agua por red, SINAC)
 templates/    plantillas Twig: web, formulario, panel y emails
 assets/       css/estilos.css y js/app.js (sin dependencias externas)
 build/        generador de la web estática y comprobaciones SEO
@@ -80,5 +80,6 @@ Los secretos y variables necesarios están en [docs/PASOS.md](docs/PASOS.md).
 ## Datos
 
 - `scripts/semillas_keywords.php` y `scripts/dataforseo.php`: estudio de keywords y posiciones (necesita `DATAFORSEO_LOGIN` y `DATAFORSEO_PASSWORD`).
-- `scripts/importar_agua.php`: normaliza datos de calidad del agua al formato de `data/agua.csv`.
+- `scripts/municipios.php`: genera `data/municipios.csv` (padrón del INE y centro de cada municipio con límites del IGN). Una vez al año.
+- `scripts/sinac.php`: descarga del SINAC los datos del agua de cada municipio a `data/sinac.jsonl` (lo hace sola la tarea mensual de GitHub).
 - Escala de dureza y supuestos de cálculo: `app/src/Agua.php`, replicados en `assets/js/app.js`.

@@ -33,7 +33,7 @@ final class GeneradorTest extends TestCase
     {
         $this->assertFileExists(self::$salida . '/dureza-agua/barcelona/vilaprova-de-mar/index.html');
         $this->assertFileExists(self::$salida . '/dureza-agua/barcelona/barcelona/index.html');
-        $this->assertFileDoesNotExist(self::$salida . '/dureza-agua/barcelona/poblet-de-test/index.html', 'Menos de 10.000 habitantes');
+        $this->assertFileDoesNotExist(self::$salida . '/dureza-agua/barcelona/poblet-de-test/index.html', 'Menos de 1.000 habitantes');
         $this->assertFileDoesNotExist(self::$salida . '/dureza-agua/barcelona/riera-ficticia/index.html', 'Muestra de hace más de 24 meses');
         $provincia = (string) file_get_contents(self::$salida . '/dureza-agua/barcelona/index.html');
         $this->assertStringContainsString('Poblet de Test', $provincia, 'Aparece en la tabla de la provincia');

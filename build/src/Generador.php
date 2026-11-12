@@ -15,7 +15,7 @@ use Twig\Environment;
 final class Generador
 {
     /** Municipios con página propia: población mínima (salvo capitales o con página comercial). */
-    public const POBLACION_MINIMA = 10000;
+    public const POBLACION_MINIMA = 1000;
     /** Antigüedad máxima de la última muestra para indexar una página de municipio. */
     public const MESES_MAX_MUESTRA = 24;
     /** Mínimo de municipios con datos para indexar una página de provincia. */
@@ -330,9 +330,20 @@ final class Generador
             }
         }
 
+        // Provincias con datos (todas las de España que tengan; los leads se gestionan aparte, por cobertura).
+        $provinciasConDatos = [];
+        foreach (array_keys($this->provincias) as $codigo) {
+            $codigo = sprintf('%02d', (int) $codigo); // PHP convierte '08' en entero al usarlo como clave
+            // Las zonas donde trabajamos tienen página siempre (se enlazan desde la portada y las ciudades).
+            if ($this->agua->deProvincia($codigo) || isset($this->zonas[$codigo])) {
+                $provinciasConDatos[$codigo] = true;
+            }
+        }
+        uksort($provinciasConDatos, fn ($a, $b) => strcoll($this->provincias[$a]['nombre'], $this->provincias[$b]['nombre']));
+
         // 1) Decidir qué municipios tienen página propia (antes de pintar nada, para poder enlazarlos).
-        foreach ($this->zonas as $codigo => $zona) {
-            $codigo = (string) $codigo; // PHP convierte '17' en entero al usarlo como clave
+        foreach ($provinciasConDatos as $codigo => $_) {
+            $codigo = (string) $codigo;
             foreach ($this->agua->deProvincia($codigo) as $m) {
                 $grande = $m['poblacion'] >= self::POBLACION_MINIMA || $m['capital'] || isset($inesConCiudad[$m['ine']]);
                 if ($grande && $m['fecha'] >= $limiteMuestra) {
@@ -352,8 +363,9 @@ final class Generador
         $indice = [];
         $algunaIndexable = false;
 
-        foreach ($this->zonas as $codigo => $zona) {
-            $codigo = (string) $codigo; // PHP convierte '17' en entero al usarlo como clave
+        foreach ($provinciasConDatos as $codigo => $_) {
+            $codigo = sprintf('%02d', (int) $codigo);
+            $cubierta = isset($this->zonas[$codigo]);
             $prov = $this->provincias[$codigo];
             $rutaProv = '/dureza-agua/' . $prov['slug'] . '/';
             $municipios = $this->agua->deProvincia($codigo);
@@ -388,7 +400,7 @@ final class Generador
                 'municipios' => $filas,
                 'resumen' => ['media_fh' => $media, 'pct_duras' => $municipios ? round($duras / count($municipios) * 100) : 0],
                 'provincia_nombre' => $prov['nombre'],
-                'cubierta' => true,
+                'cubierta' => $cubierta,
             ], $indexableProv, 'dureza-provincia', $municipios ? max(array_column($municipios, 'fecha')) : null);
 
             // Páginas de municipio
@@ -427,7 +439,8 @@ final class Generador
                     )),
                     'ruta_provincia' => $rutaProv,
                     'provincia_nombre' => $prov['nombre'],
-                    'cubierta' => true,
+                    'faq' => $this->preguntasMunicipio($m),
+                    'cubierta' => $cubierta,
                 ], true, 'dureza-municipio', $m['fecha']);
             }
         }
@@ -462,6 +475,39 @@ final class Generador
             }
         }
         return $texto;
+    }
+
+    /**
+     * Preguntas y respuestas cortas con los datos del municipio (lo que se suele preguntar a buscadores y asistentes).
+     * @return list<array{p: string, r: string}>
+     */
+    private function preguntasMunicipio(array $m): array
+    {
+        $fh = number_format($m['dureza_fh'], 1, ',', '.');
+        $cat = mb_strtolower(Agua::categoria($m['dureza_fh'])['nombre']);
+        $preguntas = [[
+            'p' => "¿Es dura el agua de {$m['nombre']}?",
+            'r' => "Sí: tiene {$fh} °fH (unos " . number_format($m['dureza_fh'] * 10, 0, ',', '.') . " mg/L de carbonato cálcico), así que es {$cat}.",
+        ]];
+        if (Agua::categoria($m['dureza_fh'])['clave'] === 'blanda') {
+            $preguntas[0]['r'] = "No: tiene {$fh} °fH, así que es blanda. No hace falta descalcificador.";
+        }
+        $control = $m['agua']['control'] ?? null;
+        if ($control && $control['apta'] !== null) {
+            $fecha = date('d/m/Y', strtotime($control['fecha']));
+            $preguntas[] = [
+                'p' => "¿Se puede beber el agua del grifo en {$m['nombre']}?",
+                'r' => $control['apta']
+                    ? "Sí. El último análisis de control notificado al SINAC ({$fecha}) la calificó como apta para el consumo. Que sea dura no la hace insalubre: la cal afecta al sabor y a la instalación, no a la salud."
+                    : "El último análisis de control notificado al SINAC ({$fecha}) la calificó como no apta para el consumo. Consulta al ayuntamiento o a la empresa gestora si la incidencia sigue abierta.",
+            ];
+        }
+        $d4 = Agua::dimensionado(4, $m['dureza_fh']);
+        $preguntas[] = [
+            'p' => "¿Necesito descalcificador en {$m['nombre']}?",
+            'r' => $m['recomendacion']['resumen'] . ($d4 ? " Para una familia de 4 personas, lo habitual es un equipo de unos {$d4['litros_resina']} litros de resina." : ''),
+        ];
+        return $preguntas;
     }
 
     /** Añade " | AguaSinCal" solo si el título no se pasa de 65 caracteres. */

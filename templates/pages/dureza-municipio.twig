@@ -19,26 +19,41 @@
           </ul>
         </div>
       </div>
-      <p class="nota">Fuente: SINAC, Ministerio de Sanidad. Última muestra publicada: {{ m.fecha|fecha }}. 1 °fH = 10 mg/L de carbonato cálcico. <a href="/metodologia-datos/">Cómo calculamos esto</a>.</p>
+      <p class="nota">Fuente: <a href="https://sinac.sanidad.gob.es/CiudadanoWeb/ciudadano/informacionAbastecimientoActionEntrada.do" rel="noopener">SINAC, Ministerio de Sanidad</a>. Muestra más reciente: {{ m.fecha|fecha }}{% if m.agua.consultado %} · datos consultados el {{ m.agua.consultado|fecha }}{% endif %}. 1 °fH = 10 mg/L de carbonato cálcico.{% if m.zonas|filter(z => z.calculada)|length %} *Calculada con el calcio y el magnesio.{% endif %} <a href="/metodologia-datos/">Cómo calculamos esto</a>.</p>
     </section>
+
+    {% if m.agua %}
+    <section class="bloque">
+      <h2>El agua de {{ m.nombre }} en cifras</h2>
+      <dl class="ficha ficha--datos">
+        {% if m.agua.gestor %}<dt>Empresa gestora</dt><dd>{{ m.agua.gestor }}</dd>{% endif %}
+        <dt>Redes de abastecimiento</dt><dd>{{ m.agua.redes }} ({{ m.agua.poblacion_abastecida|num }} habitantes abastecidos)</dd>
+        {% if m.agua.origenes %}<dt>Origen del agua</dt><dd>{% for o in m.agua.origenes %}{{ {'superficial': 'superficial (ríos y embalses)', 'subterránea': 'subterránea (pozos y manantiales)', 'desalada': 'desalada (agua de mar)'}[o] }}{{ loop.last ? '' : (loop.revindex == 2 ? ' y ' : ', ') }}{% endfor %}{% if m.agua.osmosis_planta %}. Parte se trata con ósmosis inversa en la potabilizadora{% endif %}</dd>{% endif %}
+        {% if m.agua.precio_m3 %}<dt>Precio del agua</dt><dd>{{ m.agua.precio_m3|num(2) }} € por m³ (1.000 litros), según la empresa gestora</dd>{% endif %}
+        {% if m.agua.control %}<dt>Último análisis de control</dt><dd>{{ m.agua.control.fecha|fecha }}: {% if m.agua.control.apta == 1 %}agua apta para el consumo{% elseif m.agua.control.apta == 0 %}calificada como no apta para el consumo{% else %}sin calificación{% endif %}</dd>{% endif %}
+        {% if m.agua.langelier is not null %}<dt>Índice de Langelier</dt><dd>{{ m.agua.langelier|num(2) }}: {% if m.agua.langelier > 0.3 %}tendencia a formar cal (incrustante){% elseif m.agua.langelier < -0.3 %}tendencia corrosiva{% else %}agua equilibrada{% endif %}</dd>{% endif %}
+      </dl>
+    </section>
+    {% endif %}
 
     {% if m.zonas|length > 1 %}
     <section class="bloque">
-      <h2>Zonas de abastecimiento de {{ m.nombre }}</h2>
-      <p>El agua de {{ m.nombre }} llega por {{ m.zonas|length }} redes distintas, así que la dureza cambia según el barrio.</p>
+      <h2>Dureza por zona de abastecimiento</h2>
+      <p>El agua de {{ m.nombre }} llega por {{ m.zonas|length }} redes con datos de dureza, así que cambia según el barrio o la urbanización.</p>
       <div class="tabla-scroll"><table>
-        <thead><tr><th scope="col">Zona de abastecimiento</th><th scope="col">Dureza (°fH)</th><th scope="col">Muestra</th></tr></thead>
-        <tbody>{% for z in m.zonas %}<tr><th scope="row">{{ z.nombre }}</th><td>{{ z.dureza_fh|num(1) }}</td><td>{{ z.fecha|fecha(true) }}</td></tr>{% endfor %}</tbody>
+        <thead><tr><th scope="col">Zona de abastecimiento</th><th scope="col">Habitantes</th><th scope="col">Dureza (°fH)</th><th scope="col">Muestra</th></tr></thead>
+        <tbody>{% for z in m.zonas %}<tr><th scope="row">{{ z.nombre }}</th><td>{{ z.poblacion|num }}</td><td>{{ z.dureza_fh|num(1) }}{% if z.calculada %}<abbr title="Calculada con el calcio y el magnesio">*</abbr>{% endif %}</td><td>{{ z.fecha|fecha(true) }}</td></tr>{% endfor %}</tbody>
       </table></div>
     </section>
     {% endif %}
 
     {% if m.parametros %}
     <section class="bloque">
-      <h2>Otros parámetros del agua</h2>
+      <h2>Composición del agua de {{ m.nombre }}</h2>
+      <p class="nota">Último valor notificado por cada red (media según la población que abastece). El límite es el valor paramétrico del Real Decreto 3/2023.</p>
       <div class="tabla-scroll"><table>
         <thead><tr><th scope="col">Parámetro</th><th scope="col">Valor</th><th scope="col">Límite legal</th></tr></thead>
-        <tbody>{% for p in m.parametros %}<tr><th scope="row">{{ p.nombre }}</th><td>{{ p.valor|num(p.valor < 100 ? 1 : 0) }} {{ p.unidad }}</td><td>{{ p.limite ?? '–' }}</td></tr>{% endfor %}</tbody>
+        <tbody>{% for p in m.parametros %}<tr><th scope="row">{{ p.nombre }}</th><td>{{ p.valor|num(p.valor < 10 ? 2 : (p.valor < 100 ? 1 : 0)) }} {{ p.unidad }}</td><td>{{ p.limite ?? '–' }}</td></tr>{% endfor %}</tbody>
       </table></div>
     </section>
     {% endif %}
@@ -53,6 +68,13 @@
     {% endif %}
 
     <div class="prosa">{{ contenido_html|raw }}</div>
+
+    {% if faq %}
+    <section class="bloque">
+      <h2>Preguntas frecuentes sobre el agua de {{ m.nombre }}</h2>
+      {% for q in faq %}<h3>{{ q.p }}</h3><p>{{ q.r }}</p>{% endfor %}
+    </section>
+    {% endif %}
 
     {% if cercanos %}
     <section class="bloque">

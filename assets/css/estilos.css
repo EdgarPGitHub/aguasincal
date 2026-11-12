@@ -323,6 +323,8 @@ input[type="checkbox"] { width: 20px; height: 20px; flex: none; margin: 2px 0 0;
 .ficha dt { color: var(--tinta-2); }
 .ficha dd { margin: 0; overflow-wrap: anywhere; }
 .ficha .mensaje { white-space: pre-line; }
+.ficha--datos { grid-template-columns: minmax(150px, 220px) 1fr; gap: 8px 16px; }
+@media (max-width: 560px) { .ficha--datos { grid-template-columns: 1fr; gap: 2px; } .ficha--datos dd { margin-bottom: 8px; } }
 .paginacion { display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
 .paginacion a { padding: 6px 12px; border: 1px solid var(--linea); border-radius: 8px; background: #fff; text-decoration: none; }
 .paginacion a[aria-current="page"] { background: var(--acento); color: #fff; border-color: var(--acento); }

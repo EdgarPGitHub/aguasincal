@@ -9,7 +9,7 @@ declare(strict_types=1);
  *  --app       ruta del código de la app RELATIVA a la carpeta pública (en el servidor: ../aguasincal-app)
  *  --panel     carpeta del panel de gestión (debe coincidir con panel_ruta de config.local.php)
  *  --noindex   web visible pero fuera de Google (antes del lanzamiento): noindex en todas las páginas y sin sitemap en robots.txt
- *  --datos     carpeta con municipios.csv y agua.csv (por defecto data/; los tests usan tests/fixtures/data)
+ *  --datos     carpeta con municipios.csv y sinac.jsonl (por defecto data/; los tests usan tests/fixtures/data)
  *
  * Variables de entorno opcionales: TELEFONO y WHATSAPP (p. ej. "600 12 34 56"); vacías = sin botones de contacto.
  *
