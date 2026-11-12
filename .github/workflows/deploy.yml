@@ -37,7 +37,7 @@ jobs:
     env:
       PANEL_RUTA: ${{ secrets.PANEL_RUTA }}
       DOMINIO: ${{ vars.DOMINIO || 'aguasincal.es' }}
-      CARPETA_PUBLICA: ${{ vars.CARPETA_PUBLICA || 'aguasincal.es' }}
+      CARPETA_PUBLICA: ${{ vars.CARPETA_PUBLICA || 'public_html' }}
       INDEXAR: ${{ vars.INDEXAR || 'no' }}
       TELEFONO: ${{ vars.TELEFONO || '' }}
       WHATSAPP: ${{ vars.WHATSAPP || '' }}

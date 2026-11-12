@@ -78,12 +78,12 @@ Los cambios se aplican al abrir una sesión nueva.
 
 ## Paso 3 · cPanel de Raiola (5 minutos)
 
-1. **Carpeta del dominio.** En **Dominios**, mira la columna «Raíz del documento» de aguasincal.es. Normalmente es `/home/TUUSUARIO/aguasincal.es`; apunta lo que va después de `/home/TUUSUARIO/` (por ejemplo `aguasincal.es` o `public_html/aguasincal.es`).
+1. **Carpeta del dominio.** Dentro de la carpeta del dominio (`aguasincal.es`) crea `public_html` y, en **Dominios**, pon la «Raíz del documento» de aguasincal.es en `aguasincal.es/public_html`. Solo `public_html` es visible desde internet; la aplicación y los datos irán al lado, fuera de ella.
 2. **PHP.** En **Seleccionar versión de PHP** (o MultiPHP), con PHP 8.5 en aguasincal.es, comprueba que están activadas las extensiones `pdo_sqlite`, `sqlite3` y `mbstring`.
 3. **Cuenta FTP para publicar.** En **Cuentas FTP → Agregar cuenta FTP**:
-   - Inicio de sesión: `despliegue` (quedará `despliegue@aguasincal.es`).
+   - Inicio de sesión: `deploy` (quedará `deploy@aguasincal.es`).
    - Contraseña: usa el generador y guárdala; va a GitHub.
-   - **Directorio: bórralo y escribe `/`.** Necesita la carpeta personal para crear `aguasincal-app` y `aguasincal-data` fuera de la parte pública.
+   - **Directorio: la carpeta del dominio** (`/home/TUUSUARIO/aguasincal.es`). Así la cuenta solo ve esta web, y puede crear `aguasincal-app` y `aguasincal-data` junto a `public_html`.
    - Cuota: ilimitada.
    - Después, en esa misma pantalla, «Configurar cliente FTP» te muestra el **servidor FTP**. Usa el nombre del servidor, porque su certificado es válido.
 4. **Correo (ya tienes info@).** En **Email Deliverability**, deja SPF y DKIM en verde (botón «Reparar» si sale en rojo).
@@ -109,7 +109,7 @@ Abre **https://github.com/EdgarPGitHub/aguasincal/settings/secrets/actions** →
 | Name | Secret |
 |---|---|
 | `FTP_HOST` | Servidor FTP del Paso 3.3 |
-| `FTP_USUARIO` | `despliegue@aguasincal.es` |
+| `FTP_USUARIO` | `deploy@aguasincal.es` |
 | `FTP_CLAVE` | Contraseña de esa cuenta FTP |
 | `SMTP_PASS` | Contraseña del buzón `info@aguasincal.es` |
 | `LEADS_EMAIL` | Email donde quieres recibir los leads (mejor uno no publicado) |
@@ -123,20 +123,24 @@ En la misma página, pestaña **Variables** → **New repository variable**:
 
 | Name | Value |
 |---|---|
-| `CARPETA_PUBLICA` | Lo que apuntaste en el Paso 3.1 (p. ej. `aguasincal.es`) |
+| `CARPETA_PUBLICA` | `public_html` (es el valor por defecto; crearla es opcional) |
 | `DESPLIEGUE_ACTIVO` | `si` |
 
-### 3. Rama principal
+### 3. Comprobar antes de publicar
+
+**https://github.com/EdgarPGitHub/aguasincal/actions/workflows/comprobar-servidor.yml** → **Run workflow**. Entra por FTP y revisa los secretos **sin subir ni cambiar nada**. Todo en ✅ → ya se puede publicar.
+
+### 4. Rama principal
 
 **https://github.com/EdgarPGitHub/aguasincal/settings** → «Default branch» → icono de flechas → elige `main` → Update.
 
-### 4. Publicar
+### 5. Publicar
 
 **https://github.com/EdgarPGitHub/aguasincal/actions/workflows/deploy.yml** → **Run workflow** → rama `main` → **Run workflow**.
 
 En unos 3 minutos aparece un ✓ verde y la web está en https://aguasincal.es (visible, pero fuera de Google). Si sale una ✗ roja, ábrela: el mensaje dice qué falta. Si no te queda claro, cópiamelo.
 
-### 5. Primer acceso al panel
+### 6. Primer acceso al panel
 
 1. Entra en `https://aguasincal.es/<PANEL_RUTA>/` con `ADMIN_EMAIL` y `ADMIN_CLAVE`.
 2. La primera vez te pide la verificación en dos pasos: escanea el QR con Google Authenticator (o similar) y escribe el código.

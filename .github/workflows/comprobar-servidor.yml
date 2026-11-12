@@ -1,5 +1,5 @@
 # Comprobación previa a publicar: revisa los secretos y entra por FTP SIN subir ni cambiar nada.
-# Se lanza a mano: Actions → Comprobar servidor → Run workflow. El resumen aparece en la página de la ejecución.
+# Se lanza a mano: Actions → Comprobar servidor → Run workflow. El resultado sale en el registro y en el resumen.
 name: Comprobar servidor
 
 on:
@@ -12,7 +12,7 @@ jobs:
   comprobar:
     runs-on: ubuntu-latest
     env:
-      CARPETA_PUBLICA: ${{ vars.CARPETA_PUBLICA || 'aguasincal.es' }}
+      CARPETA_PUBLICA: ${{ vars.CARPETA_PUBLICA || 'public_html' }}
       DOMINIO: ${{ vars.DOMINIO || 'aguasincal.es' }}
       FTP_HOST: ${{ secrets.FTP_HOST }}
       FTP_PORT: ${{ secrets.FTP_PORT || '21' }}
@@ -24,58 +24,74 @@ jobs:
       ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
       ADMIN_CLAVE: ${{ secrets.ADMIN_CLAVE }}
       LEADS_EMAIL: ${{ secrets.LEADS_EMAIL }}
+      # Solo para avisar si alguno se creó como «Variable» en vez de como «Secret» (no se usan).
+      COMO_VARIABLE: >-
+        ${{ vars.FTP_HOST && 'FTP_HOST ' || '' }}${{ vars.FTP_USUARIO && 'FTP_USUARIO ' || '' }}${{ vars.FTP_CLAVE && 'FTP_CLAVE ' || '' }}${{ vars.SMTP_PASS && 'SMTP_PASS ' || '' }}${{ vars.PANEL_RUTA && 'PANEL_RUTA ' || '' }}${{ vars.ADMIN_EMAIL && 'ADMIN_EMAIL ' || '' }}${{ vars.ADMIN_CLAVE && 'ADMIN_CLAVE ' || '' }}${{ vars.LEADS_EMAIL && 'LEADS_EMAIL ' || '' }}
+      DESPLIEGUE_ACTIVO: ${{ vars.DESPLIEGUE_ACTIVO }}
     steps:
       - name: Secretos y variables
         run: |
-          r=$GITHUB_STEP_SUMMARY
-          echo "## Secretos y variables" >> $r
+          nota() { echo "$1"; echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+          nota "## Secretos y variables"
           mal=0
           for s in FTP_HOST FTP_USUARIO LFTP_PASSWORD SMTP_PASS PANEL_RUTA ADMIN_EMAIL ADMIN_CLAVE; do
             nombre=$s; [ "$s" = LFTP_PASSWORD ] && nombre=FTP_CLAVE
-            if [ -n "${!s}" ]; then echo "- ✅ \`$nombre\` definido" >> $r; else echo "- ❌ \`$nombre\` FALTA" >> $r; mal=1; fi
+            if [ -n "${!s}" ]; then nota "- ✅ $nombre definido"; else nota "- ❌ $nombre FALTA (crear en Secrets → Repository secrets)"; mal=1; fi
           done
-          if [ -n "$LEADS_EMAIL" ]; then echo "- ✅ \`LEADS_EMAIL\` definido" >> $r; else echo "- ℹ️ \`LEADS_EMAIL\` no definido: los leads irán a info@$DOMINIO" >> $r; fi
-          if [[ "$PANEL_RUTA" =~ ^[a-z0-9][a-z0-9-]{2,40}$ ]]; then echo "- ✅ \`PANEL_RUTA\` con formato válido" >> $r; else echo "- ❌ \`PANEL_RUTA\` solo puede tener minúsculas, números y guiones (3–41 caracteres)" >> $r; mal=1; fi
-          if [ ${#ADMIN_CLAVE} -ge 12 ]; then echo "- ✅ \`ADMIN_CLAVE\` tiene 12 caracteres o más" >> $r; else echo "- ❌ \`ADMIN_CLAVE\` debe tener al menos 12 caracteres" >> $r; mal=1; fi
-          if [[ "$ADMIN_EMAIL" == *@*.* ]]; then echo "- ✅ \`ADMIN_EMAIL\` parece un email" >> $r; else echo "- ❌ \`ADMIN_EMAIL\` no parece un email" >> $r; mal=1; fi
-          echo "- ℹ️ Variable \`CARPETA_PUBLICA\` = \`$CARPETA_PUBLICA\`" >> $r
-          if [ "${{ vars.DESPLIEGUE_ACTIVO }}" = "si" ]; then echo "- ℹ️ \`DESPLIEGUE_ACTIVO\` = si (la publicación está activada)" >> $r; else echo "- ℹ️ \`DESPLIEGUE_ACTIVO\` sin activar (normal hasta el último paso)" >> $r; fi
+          if [ -n "$LEADS_EMAIL" ]; then nota "- ✅ LEADS_EMAIL definido"; else nota "- ℹ️ LEADS_EMAIL no definido (opcional): los leads irán a info@$DOMINIO"; fi
+          if [ -n "$PANEL_RUTA" ]; then
+            if [[ "$PANEL_RUTA" =~ ^[a-z0-9][a-z0-9-]{2,40}$ ]]; then nota "- ✅ PANEL_RUTA con formato válido"; else nota "- ❌ PANEL_RUTA solo puede tener minúsculas, números y guiones (3–41 caracteres)"; mal=1; fi
+          fi
+          if [ -n "$ADMIN_CLAVE" ]; then
+            if [ ${#ADMIN_CLAVE} -ge 12 ]; then nota "- ✅ ADMIN_CLAVE tiene 12 caracteres o más"; else nota "- ❌ ADMIN_CLAVE debe tener al menos 12 caracteres"; mal=1; fi
+          fi
+          if [ -n "$ADMIN_EMAIL" ]; then
+            if [[ "$ADMIN_EMAIL" == *@*.* ]]; then nota "- ✅ ADMIN_EMAIL parece un email"; else nota "- ❌ ADMIN_EMAIL no parece un email"; mal=1; fi
+          fi
+          if [ -n "${COMO_VARIABLE// /}" ]; then
+            nota "- ⚠️ Creados como «Variable» en vez de «Secret» (no sirven así; bórralos de Variables y créalos en Secrets): $COMO_VARIABLE"
+            mal=1
+          fi
+          nota "- ℹ️ Carpeta pública que se usará: $CARPETA_PUBLICA"
+          if [ "$DESPLIEGUE_ACTIVO" = "si" ]; then nota "- ℹ️ DESPLIEGUE_ACTIVO = si (la publicación está activada)"; else nota "- ℹ️ DESPLIEGUE_ACTIVO sin activar (normal hasta el último paso)"; fi
           exit $mal
 
       - name: Acceso FTP (solo lectura)
         if: always()
         run: |
-          r=$GITHUB_STEP_SUMMARY
-          echo "## Acceso FTP" >> $r
-          sudo apt-get install -y -qq lftp > /dev/null
+          nota() { echo "$1"; echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+          nota "## Acceso FTP"
+          sudo apt-get install -y -qq lftp > /dev/null 2>&1
           VERIFICAR=yes; [ "$FTP_VERIFICAR_CERT" = "no" ] && VERIFICAR=no
           AJUSTES="set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate $VERIFICAR; set ftp:passive-mode true; set net:timeout 30; set net:max-retries 2; set cmd:fail-exit true"
           if ! timeout 90 lftp -c "$AJUSTES; open --env-password -u \"$FTP_USUARIO\" -p $FTP_PORT \"$FTP_HOST\"; cls -1a" < /dev/null > listado.txt 2> error.txt; then
-            echo "- ❌ No se puede entrar por FTP con cifrado. Error:" >> $r
-            echo '```' >> $r; sed 's/^/  /' error.txt | head -5 >> $r; echo '```' >> $r
-            if grep -qi certificate error.txt; then
-              echo "- 👉 El certificado del servidor no coincide con \`FTP_HOST\`. Pon en \`FTP_HOST\` el nombre del servidor de Raiola (no ftp.aguasincal.es)." >> $r
+            nota "- ❌ No se puede entrar por FTP cifrado. Respuesta del servidor:"
+            head -5 error.txt | while IFS= read -r l; do nota "    $l"; done
+            if grep -qi certific error.txt; then
+              nota "- 👉 El certificado no corresponde a FTP_HOST: usa el nombre del servidor que indica Raiola en «Cuentas FTP → Configurar cliente FTP»."
+            elif grep -qiE '530|login|incorrect' error.txt; then
+              nota "- 👉 Usuario o contraseña FTP incorrectos. El usuario suele ser completo: deploy@aguasincal.es"
             fi
             exit 1
           fi
-          echo "- ✅ Entra por FTP cifrado (FTPS) con certificado verificado: $VERIFICAR" >> $r
-          echo "- Contenido de la carpeta de la cuenta FTP:" >> $r
-          echo '```' >> $r; grep -v '^\.\{1,2\}/\?$' listado.txt | sort >> $r; echo '```' >> $r
-          if grep -qx "$CARPETA_PUBLICA/\?" listado.txt; then
-            echo "- ✅ Existe la carpeta pública \`$CARPETA_PUBLICA\`" >> $r
+          nota "- ✅ Entra por FTP cifrado (FTPS), certificado verificado: $VERIFICAR"
+          nota "- Contenido de la carpeta de la cuenta FTP:"
+          grep -vxE '\.{1,2}/?' listado.txt | sort | while IFS= read -r l; do nota "    $l"; done
+          if grep -qxE "$CARPETA_PUBLICA/?" listado.txt; then
+            nota "- ✅ Existe la carpeta pública $CARPETA_PUBLICA"
           else
-            echo "- ❌ No encuentro la carpeta \`$CARPETA_PUBLICA\` dentro de la cuenta FTP" >> $r
+            nota "- ❌ No encuentro la carpeta $CARPETA_PUBLICA dentro de la cuenta FTP"
             exit 1
           fi
 
       - name: Web y certificado
         if: always()
         run: |
-          r=$GITHUB_STEP_SUMMARY
-          echo "## Web" >> $r
+          nota() { echo "$1"; echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+          nota "## Web"
           if codigo=$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMINIO/"); then
-            echo "- ✅ https://$DOMINIO responde con certificado válido (código $codigo)" >> $r
+            nota "- ✅ https://$DOMINIO responde con certificado válido (código $codigo)"
           else
-            echo "- ❌ https://$DOMINIO no responde o el certificado no es válido" >> $r
+            nota "- ❌ https://$DOMINIO no responde o el certificado no es válido"
             exit 1
           fi
