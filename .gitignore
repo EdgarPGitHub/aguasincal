@@ -9,3 +9,4 @@ config.local.php
 .env
 data/sinac-p*.jsonl
 data/*.tmp
+__pycache__/
