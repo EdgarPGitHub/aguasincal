@@ -12,8 +12,10 @@
   "servicio_form": "descalcificadores",
   "voz": "es_ES-sharvard-medium",
   "hablante": 0,
-  "lentitud": 1.0,
+  "lentitud": 1.07,
+  "ritmo": 0.7,
   "enlace": true,
+  "pausa_coma": 0.22,
   "poster": "resina",
   "escenas": [
     {
@@ -72,6 +74,5 @@
         }
       ]
     }
-  ],
-  "pausa_coma": 0.22
+  ]
 }
