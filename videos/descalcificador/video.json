@@ -1,7 +1,7 @@
 {
   "titulo": "Cómo funciona un descalcificador",
-  "descripcion": "Animación de un minuto: qué es la cal, cómo la resina cambia el calcio y el magnesio por sodio, cómo se regenera con sal y qué mantenimiento necesita.",
-  "duracion": 79.4,
+  "descripcion": "Vídeo de poco más de un minuto: qué es la cal, cómo la resina cambia el calcio y el magnesio por sodio, cómo se regenera con sal y su mantenimiento.",
+  "duracion": 75.5,
   "publicado": "2026-11-13",
   "actualizado": "2026-11-13",
   "mp4": "/assets/videos/descalcificador.mp4",
@@ -9,14 +9,14 @@
   "subtitulos": "/assets/videos/descalcificador.vtt",
   "ancho": 1920,
   "alto": 1080,
-  "bytes": 6606326,
+  "bytes": 6606672,
   "transcripcion": [
-    "¿Cómo funciona un descalcificador? Te lo explicamos en un minuto.",
+    "Así funciona un descalcificador, explicado en poco más de un minuto.",
     "El agua dura lleva mucho calcio y magnesio disueltos. No se ven, pero al calentarse se convierten en cal. Es la mancha blanca del grifo, y la costra que daña el termo y la lavadora.",
-    "Un descalcificador se instala a la entrada del agua de la casa. Tiene dos partes: una botella con resina y un depósito de sal.",
-    "El agua atraviesa la resina, que está formada por miles de bolitas diminutas. Las bolitas atrapan el calcio y el magnesio y, a cambio, sueltan sodio. Así, a toda la casa llega agua descalcificada.",
-    "Con el uso, la resina se va llenando de cal. Cada pocos días, el equipo se limpia solo, con agua y sal. La sal arranca la cal de la resina, y la cal se va por el desagüe. Y la resina queda lista para seguir trabajando.",
-    "Tú solo tienes que rellenar el depósito de sal de vez en cuando. Y conviene que un técnico revise el equipo una vez al año.",
+    "El descalcificador se instala justo donde entra el agua en casa. Tiene dos partes: una botella con resina y un depósito de sal.",
+    "El agua atraviesa la resina, que está formada por miles de bolitas diminutas. Las bolitas atrapan el calcio y el magnesio, y a cambio sueltan sodio. Y así, toda la casa recibe agua descalcificada.",
+    "Con el uso, la resina se va llenando de cal. Cada pocos días, el equipo se limpia solo con agua y sal. La sal arranca la cal de la resina, y la cal se va por el desagüe. Y la resina queda lista para seguir trabajando.",
+    "Tú solo tienes que rellenar la sal cada cierto tiempo. Y conviene que un técnico revise el equipo una vez al año.",
     "¿Te merece la pena? Depende de la dureza del agua de tu municipio. Consúltala gratis en AguaSinCal.es."
   ],
   "creditos": "Animación: AguaSinCal. Voz sintética: Piper, voz «sharvard» (CC BY 3.0)."
