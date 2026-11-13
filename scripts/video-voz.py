@@ -30,7 +30,7 @@ ENTRADA = 0.5      # silencio al empezar cada escena
 ENTRE_FRASES = 0.4
 FINAL = 0.9        # silencio al acabar cada escena (deja ver la animación)
 PAUSA = "|"        # pausa de respiración: se pronuncia como una coma y no aparece en los subtítulos
-VERSION = 2        # cambia la caché de frases cuando cambia la forma de generar la voz
+VERSION = 3        # cambia la caché de frases cuando cambia la forma de generar la voz
 
 
 def main() -> None:
@@ -98,7 +98,7 @@ def hablar(voz, texto: str, ajustes: dict):
     from piper import SynthesisConfig
     sr = voz.config.sample_rate
     config = SynthesisConfig(speaker_id=ajustes["hablante"], length_scale=ajustes["lentitud"], noise_w_scale=ajustes["ritmo"])
-    texto = re.sub(r"\s*\|\s*", ", ", texto)
+    texto = pronunciacion(re.sub(r"\s*\|\s*", ", ", texto))
     silencio = np.zeros(int(ajustes["pausa_coma"] * sr), dtype=np.float32)
     trozos = []
     for fonemas in voz.phonemize(texto):
@@ -111,6 +111,7 @@ def hablar(voz, texto: str, ajustes: dict):
         if any(f.strip() for f in actual):
             partes.append(actual)
         for i, parte in enumerate(partes):
+            parte = atonas(parte)
             parte = enlazar(parte) if ajustes["enlace"] else parte
             while parte and parte[0] == " ":
                 parte = parte[1:]
@@ -118,6 +119,19 @@ def hablar(voz, texto: str, ajustes: dict):
             if i < len(partes) - 1:
                 trozos.append(silencio)
     return np.concatenate(trozos), sr
+
+
+def pronunciacion(texto: str) -> str:
+    """
+    Arreglos de pronunciación del programa que convierte el texto en sonidos (espeak), que lee mal la «ü»:
+    «desagüe» sonaba «desa-gu-É». Escrito «desagwe» suena bien («desá-güe»).
+    """
+    return re.sub(r"g[üÜ]([eiéí])", r"gw\1", texto)
+
+
+def atonas(fonemas: list) -> list:
+    """El artículo «un» va sin acento: «funciona un descalcificador», no «funciona ÚN descalcificador»."""
+    return list(re.sub(r"(^|\s)ˈu([nmŋ])(?=\s)", r"\1u\2", "".join(fonemas)))
 
 
 def enlazar(fonemas: list) -> list:
