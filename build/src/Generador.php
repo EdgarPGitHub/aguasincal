@@ -42,6 +42,8 @@ final class Generador
     /** @var array<string, array> páginas de municipio generadas por INE */
     private array $paginasMunicipio = [];
     private array $docs = [];
+    /** @var array<string, array> vídeos explicativos publicados, por carpeta de videos/ */
+    private array $videos = [];
     private string $version;
     private Informe $informe;
 
@@ -76,10 +78,12 @@ final class Generador
             unset($doc);
         }
 
+        $this->cargarVideos();
         $this->registrarPaginasDureza();
         $this->registrarServicios();
         $this->registrarCiudades();
         $this->registrarGuias();
+        $this->registrarVideos();
         $this->registrarPaginas();
         $this->registrar('/404.html', 'pages/404.twig', ['pagina' => [
             'titulo' => 'Página no encontrada', 'descripcion' => '', 'ruta' => '/404.html', 'indexable' => false,
@@ -171,8 +175,13 @@ final class Generador
                 array_keys($this->zonas),
             ));
             $servicioForm = (string) ($fm['servicio_form'] ?? $servicio);
+            $video = $this->videoDe($doc);
+            if ($video) {
+                $pagina['imagen'] = $video['portada'];
+            }
             $this->registrar($fm['ruta'], 'pages/servicio.twig', [
                 'pagina' => $pagina,
+                'video' => $video,
                 'contenido_html' => $doc['html'],
                 'precios' => $this->precios[$servicioForm] ?? [],
                 'precios_actualizado' => $this->precios['actualizado'] ?? '',
@@ -254,8 +263,13 @@ final class Generador
                     $this->informe->error("{$doc['archivo']}: la relacionada \"$ruta\" no existe.");
                 }
             }
+            $video = $this->videoDe($doc);
+            if ($video) {
+                $pagina['imagen'] = $video['portada'];
+            }
             $this->registrar($fm['ruta'], 'pages/guia.twig', [
                 'pagina' => $pagina,
+                'video' => $video,
                 'contenido_html' => $doc['html'],
                 'servicio_form' => (string) ($fm['servicio_form'] ?? ''),
                 'relacionadas' => $relacionadas,
@@ -274,6 +288,99 @@ final class Generador
             ],
             'grupos' => array_map(fn ($nombre, $guias) => ['nombre' => $nombre, 'guias' => $guias], array_keys($grupos), $grupos),
         ], $hayPublicadas, 'indice');
+    }
+
+    /**
+     * Vídeos explicativos (videos/<carpeta>/): guion.json (textos, ruta y páginas relacionadas) y video.json (lo escribe
+     * scripts/video-render.js junto al MP4, la portada y los subtítulos en assets/videos/). Sin MP4 no se publica.
+     */
+    private function cargarVideos(): void
+    {
+        foreach (glob($this->app->raiz . '/videos/*/video.json') ?: [] as $archivo) {
+            $clave = basename(dirname($archivo));
+            $v = json_decode((string) file_get_contents($archivo), true);
+            $guion = json_decode((string) @file_get_contents(dirname($archivo) . '/guion.json'), true);
+            $mp4 = is_array($v) ? $this->app->raiz . ($v['mp4'] ?? '') : '';
+            if (!is_array($v) || !is_array($guion) || empty($guion['ruta']) || !is_file($mp4)) {
+                $this->informe->aviso("videos/$clave: falta el guion con su ruta, video.json o el MP4; no se publica.");
+                continue;
+            }
+            // Los archivos se sirven con caché larga: la huella del MP4 cambia la URL al volver a montarlo.
+            $huella = substr((string) md5_file($mp4), 0, 10);
+            foreach (['mp4', 'portada', 'subtitulos'] as $k) {
+                $v[$k] .= '?v=' . $huella;
+            }
+            $segundos = (int) round((float) $v['duracion']);
+            $this->videos[$clave] = [
+                'titulo' => (string) ($guion['titulo'] ?? $v['titulo']),
+                'descripcion' => (string) ($guion['descripcion'] ?? $v['descripcion']),
+            ] + $v + [
+                'clave' => $clave,
+                'ruta' => (string) $guion['ruta'],
+                'seo_title' => $guion['seo_title'] ?? null,
+                'relacionadas' => (array) ($guion['relacionadas'] ?? []),
+                'servicio_form' => (string) ($guion['servicio_form'] ?? ''),
+                'duracion_texto' => sprintf('%d:%02d', intdiv($segundos, 60), $segundos % 60),
+                'duracion_iso' => sprintf('PT%dM%dS', intdiv($segundos, 60), $segundos % 60),
+            ];
+        }
+    }
+
+    /** Vídeo que una página incrusta con «video: <carpeta>» en su cabecera */
+    private function videoDe(array $doc): ?array
+    {
+        $clave = (string) ($doc['fm']['video'] ?? '');
+        if ($clave !== '' && !isset($this->videos[$clave])) {
+            $this->informe->aviso("{$doc['archivo']}: el vídeo \"$clave\" no está publicado.");
+        }
+        return $this->videos[$clave] ?? null;
+    }
+
+    private function registrarVideos(): void
+    {
+        foreach ($this->videos as $v) {
+            $migas = [['nombre' => 'Vídeos', 'ruta' => '/videos/'], ['nombre' => $v['titulo'], 'ruta' => $v['ruta']]];
+            $relacionadas = [];
+            foreach ($v['relacionadas'] as $ruta) {
+                $rel = $this->docPorRuta('servicios', (string) $ruta) ?? $this->docPorRuta('guias', (string) $ruta);
+                if ($rel) {
+                    $relacionadas[] = ['ruta' => $rel['fm']['ruta'], 'titulo' => $rel['fm']['titulo']];
+                } else {
+                    $this->informe->error("videos/{$v['clave']}: la relacionada \"$ruta\" no existe.");
+                }
+            }
+            $pagina = [
+                'titulo' => $v['titulo'],
+                'seo_title' => $v['seo_title'],
+                'descripcion' => $v['descripcion'],
+                'breadcrumbs' => $migas,
+                'schema' => array_merge($this->schemaMigas($migas), [$this->schemaVideo($v)]),
+                'imagen' => $v['portada'],
+                'og_type' => 'video.other',
+            ];
+            $otros = array_values(array_filter($this->videos, fn ($o) => $o['clave'] !== $v['clave']));
+            $this->registrar($v['ruta'], 'pages/video.twig', [
+                'pagina' => $pagina,
+                'video' => $v,
+                'otros' => $otros,
+                'relacionadas' => $relacionadas,
+                'servicio_form' => $v['servicio_form'],
+            ], true, 'video', $v['actualizado']);
+        }
+        if ($this->videos) {
+            $migas = [['nombre' => 'Vídeos', 'ruta' => '/videos/']];
+            $this->registrar('/videos/', 'pages/videos.twig', [
+                'pagina' => [
+                    'titulo' => 'Vídeos: cómo funcionan los equipos de agua',
+                    'seo_title' => 'Vídeos: cómo funcionan descalcificadores y ósmosis | AguaSinCal',
+                    'descripcion' => 'Animaciones cortas y con subtítulos que explican cómo funcionan el descalcificador, la ósmosis inversa y las fuentes de agua.',
+                    'entradilla' => 'Animaciones cortas, con voz y subtítulos, para entender qué hace cada equipo antes de decidir.',
+                    'breadcrumbs' => $migas,
+                    'schema' => $this->schemaMigas($migas),
+                ],
+                'videos' => array_values($this->videos),
+            ], true, 'indice');
+        }
     }
 
     private function registrarPaginas(): void
@@ -631,6 +738,24 @@ final class Generador
         return $articulo;
     }
 
+    private function schemaVideo(array $v): array
+    {
+        $subido = new \DateTimeImmutable($v['publicado'] . ' 10:00', new \DateTimeZone('Europe/Madrid'));
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'VideoObject',
+            'name' => $v['titulo'],
+            'description' => $v['descripcion'],
+            'thumbnailUrl' => [$this->site['url'] . $v['portada']],
+            'uploadDate' => $subido->format(DATE_ATOM),
+            'duration' => $v['duracion_iso'],
+            'contentUrl' => $this->site['url'] . $v['mp4'],
+            'inLanguage' => 'es-ES',
+            'transcript' => implode("\n\n", $v['transcripcion']),
+            'publisher' => ['@type' => 'Organization', 'name' => $this->site['nombre'], 'logo' => ['@type' => 'ImageObject', 'url' => $this->site['url'] . '/favicon.svg']],
+        ];
+    }
+
     // ------------------------------------------------------------------ escritura
 
     private function escribir(): void
@@ -689,7 +814,7 @@ final class Generador
         $grupos = [
             'paginas' => ['home', 'pagina', 'indice', 'herramienta'],
             'servicios' => ['servicio', 'ciudad'],
-            'guias' => ['guia'],
+            'guias' => ['guia', 'video'],
             'dureza' => ['dureza-hub', 'dureza-provincia', 'dureza-municipio'],
         ];
         $indice = [];
@@ -794,6 +919,8 @@ final class Generador
             AddDefaultCharset UTF-8
             AddType application/manifest+json .webmanifest
             AddType image/svg+xml .svg
+            AddType video/mp4 .mp4
+            AddType text/vtt .vtt
 
             $proteccion<IfModule mod_rewrite.c>
             RewriteEngine On
@@ -819,7 +946,7 @@ final class Generador
             Header always set Referrer-Policy "strict-origin-when-cross-origin"
             Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
             Header always set Content-Security-Policy "$csp"
-            <FilesMatch "\.(css|js|svg|png|jpe?g|webp|avif|woff2)$">
+            <FilesMatch "\.(css|js|svg|png|jpe?g|webp|avif|woff2|mp4|vtt)$">
             Header set Cache-Control "public, max-age=31536000, immutable"
             </FilesMatch>
             <FilesMatch "\.(html|xml|txt|json)$">

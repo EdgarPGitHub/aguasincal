@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cómo funciona un descalcificador (escenas)</title>
+<style>
+  html, body { margin: 0; background: #f3f7fb; overflow: hidden; }
+  svg { display: block; font-family: Inter, "DejaVu Sans", sans-serif; }
+</style>
+</head>
+<body>
+<svg id="lienzo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <defs>
+    <clipPath id="clip-botella"><rect x="336" y="86" width="348" height="528" rx="64"/></clipPath>
+    <clipPath id="clip-medidor"><rect x="240" y="330" width="800" height="40" rx="10"/></clipPath>
+  </defs>
+</svg>
+<script src="../motor.js"></script>
+<script src="../piezas.js"></script>
+<script>
+'use strict';
+var C = M.C, el = M.el, set = M.set, p = M.p, P = window.Piezas;
+var fondo = P.fondo, texto = P.texto, ion = P.ion, poner = P.poner, gota = P.gota, pastilla = P.pastilla, check = P.check, tubo = P.tubo;
+
+/* 1. Título */
+M.escena('intro', function (g, o) {
+  var f = o.f;
+  fondo(g);
+  var ondas = [0, 1, 2].map(function () { return el('circle', { cx: 640, cy: 250, r: 70, fill: 'none', stroke: C.acento, 'stroke-width': 3, opacity: 0 }, g); });
+  var logo = gota(g);
+  var t1 = texto(g, 640, 440, '¿Cómo funciona un', { size: 62, peso: 800, color: C.marca });
+  var t2 = texto(g, 640, 515, 'descalcificador?', { size: 62, peso: 800, color: C.acento });
+  var sub = texto(g, 640, 590, 'Explicado en un minuto', { size: 28, peso: 500, color: C.tinta2 });
+  return function (t) {
+    poner(logo, 640, 250, Math.max(0.001, 5 * p(t, 0.05, 0.7, M.rebote)));
+    ondas.forEach(function (c, i) {
+      var x = (t * 0.55 + i / 3) % 1;
+      set(c, { r: (80 + x * 170).toFixed(1), opacity: ((1 - x) * 0.3 * p(t, 0.6, 0.6)).toFixed(3) });
+    });
+    [t1, t2].forEach(function (e, i) { var q = p(t, 0.4 + i * 0.15, 0.6, M.salida); poner(e, 0, (1 - q) * 26, 1, q); });
+    sub.setAttribute('opacity', p(t, f[1].i, 0.6).toFixed(3));
+  };
+});
+
+/* 2. El problema: calcio y magnesio → cal */
+M.escena('cal', function (g, o) {
+  var f = o.f, az = M.azar(7);
+  fondo(g);
+  var lupa = el('g', {}, g);
+  texto(lupa, 330, 125, 'Agua dura', { size: 40, peso: 800, color: C.marca });
+  el('circle', { cx: 330, cy: 360, r: 190, fill: C.agua, stroke: C.aguaBorde, 'stroke-width': 6 }, lupa);
+  var iones = [];
+  var huecos = [];
+  for (var hy = -2; hy <= 2; hy++) { for (var hx = -2; hx <= 2; hx++) { if (hx * hx + hy * hy <= 5) { huecos.push([hx * 62 + (hy % 2) * 31, hy * 56]); } } }
+  huecos.forEach(function (h, i) {
+    iones.push({ e: ion(lupa, i % 3 === 2 ? 'Mg' : 'Ca', 18), x: 330 + h[0] + (az() - 0.5) * 18, y: 360 + h[1] + (az() - 0.5) * 18, f1: az() * 6, f2: az() * 6 });
+  });
+  var leyenda = el('g', { opacity: 0 }, lupa);
+  poner(ion(leyenda, 'Ca', 16), 190, 600); texto(leyenda, 216, 609, 'Calcio', { ancla: 'start', size: 26 });
+  poner(ion(leyenda, 'Mg', 16), 340, 600); texto(leyenda, 366, 609, 'Magnesio', { ancla: 'start', size: 26 });
+
+  var panel = el('g', { opacity: 0 }, g);
+  texto(panel, 930, 125, 'Al calentarse…', { size: 40, peso: 800, color: C.marca });
+  el('rect', { x: 720, y: 170, width: 420, height: 400, rx: 28, fill: C.agua, stroke: C.aguaBorde, 'stroke-width': 6 }, panel);
+  var puntos = [];
+  for (var k = 0; k <= 12; k++) { puntos.push((780 + k * 25) + ',' + (500 + (k % 2 ? -22 : 22))); }
+  var resistencia = el('polyline', { points: puntos.join(' '), fill: 'none', stroke: C.calor, 'stroke-width': 12, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, panel);
+  var calores = [0, 1, 2].map(function () {
+    return el('path', { d: 'M0 0 q 10 -15 0 -30 q -10 -15 0 -30', fill: 'none', stroke: C.calor, 'stroke-width': 4, 'stroke-linecap': 'round', opacity: 0 }, panel);
+  });
+  var costra = [];
+  for (k = 0; k < 16; k++) {
+    var cx = 782 + k * 19.5 + az() * 6, cy = 500 + (k % 2 ? -14 : 14) + (az() - 0.5) * 18;
+    costra.push({ e: el('circle', { r: 9 + az() * 7, fill: '#fff', stroke: '#c3ced8', 'stroke-width': 2.5 }, panel), x: cx, y: cy });
+  }
+  var caen = [];
+  for (k = 0; k < 8; k++) {
+    caen.push({ e: ion(panel, k % 3 === 2 ? 'Mg' : 'Ca', 14), x0: 760 + az() * 340, y0: 215 + az() * 150, c: costra[k * 2] });
+  }
+  var etiquetaCal = pastilla(panel, 930, 628, 'Cal', { color: C.tinta, size: 26 });
+
+  /* Grifo */
+  var grifo = el('g', { opacity: 0 }, g);
+  var grifoDentro = el('g', { transform: 'translate(-45 0)' }, grifo);
+  el('rect', { x: 750, y: 248, width: 26, height: 70, rx: 6, fill: '#c9d3dd' }, grifoDentro);
+  el('rect', { x: 772, y: 264, width: 96, height: 38, rx: 12, fill: '#b8c4cf', stroke: '#8a99a8', 'stroke-width': 3 }, grifoDentro);
+  el('rect', { x: 806, y: 232, width: 14, height: 34, fill: '#8a99a8' }, grifoDentro);
+  el('rect', { x: 786, y: 224, width: 54, height: 12, rx: 6, fill: '#8a99a8' }, grifoDentro);
+  el('path', { d: 'M858 283 H880 a40 40 0 0 1 40 40 V352', fill: 'none', stroke: '#b8c4cf', 'stroke-width': 26 }, grifoDentro);
+  var manchas = [[884, 272, 7], [902, 279, 5], [916, 296, 8], [926, 318, 6], [914, 336, 7], [930, 344, 5], [896, 288, 4]].map(function (m) {
+    return { e: el('circle', { r: m[2], fill: '#fff', stroke: '#d3dbe2', 'stroke-width': 1.5 }, grifoDentro), x: m[0], y: m[1] };
+  });
+  var gotaGrifo = el('path', { d: 'M0 -12 C 5 -4 8 0 8 4 a8 8 0 0 1 -16 0 C -8 0 -5 -4 0 -12Z', fill: '#8cc8ea' }, grifoDentro);
+  texto(grifoDentro, 845, 480, 'Manchas en grifos', { size: 24, peso: 700 });
+  texto(grifoDentro, 845, 510, 'y mamparas', { size: 24, peso: 700 });
+
+  /* Lavadora */
+  var lavadora = el('g', { opacity: 0 }, g);
+  var lavadoraDentro = el('g', { transform: 'translate(25 0)' }, lavadora);
+  el('rect', { x: 1000, y: 210, width: 180, height: 214, rx: 16, fill: '#fff', stroke: '#8a99a8', 'stroke-width': 4 }, lavadoraDentro);
+  el('line', { x1: 1000, y1: 252, x2: 1180, y2: 252, stroke: '#8a99a8', 'stroke-width': 3 }, lavadoraDentro);
+  el('circle', { cx: 1150, cy: 231, r: 9, fill: '#c9d3dd' }, lavadoraDentro);
+  el('rect', { x: 1018, y: 224, width: 60, height: 14, rx: 4, fill: '#c9d3dd' }, lavadoraDentro);
+  el('circle', { cx: 1090, cy: 338, r: 62, fill: '#e9f1f7', stroke: '#8a99a8', 'stroke-width': 6 }, lavadoraDentro);
+  el('circle', { cx: 1090, cy: 338, r: 46, fill: C.agua }, lavadoraDentro);
+  var costraLav = [];
+  for (k = 0; k < 9; k++) {
+    var an = Math.PI * (0.15 + k * 0.09) + 0.2;
+    costraLav.push({ e: el('circle', { r: 6 + (k % 3) * 2, fill: '#fff', stroke: '#c3ced8', 'stroke-width': 2 }, lavadoraDentro), x: 1090 + Math.cos(an) * 42, y: 338 + Math.sin(an) * 42 });
+  }
+  texto(lavadoraDentro, 1090, 480, 'Costra en el termo', { size: 24, peso: 700 });
+  texto(lavadoraDentro, 1090, 510, 'y la lavadora', { size: 24, peso: 700 });
+
+  return function (t) {
+    iones.forEach(function (n, i) {
+      poner(n.e, n.x + 9 * Math.sin(t * 0.9 + n.f1), n.y + 9 * Math.cos(t * 0.75 + n.f2), Math.max(0.001, p(t, 0.25 + i * 0.07, 0.5, M.rebote)));
+    });
+    leyenda.setAttribute('opacity', p(t, f[0].i + 1.8, 0.5).toFixed(3));
+    var sale = p(t, f[2].i - 0.2, 0.9);
+    poner(lupa, -480 * sale, 0, 1, 1 - sale);
+    var entra = p(t, f[1].i - 0.2, 0.7);
+    poner(panel, 60 * (1 - entra) - 560 * sale, 0, 1, entra);
+    var calor = p(t, f[1].i + 0.4, 0.6);
+    resistencia.setAttribute('stroke-opacity', (0.5 + 0.5 * calor * (0.8 + 0.2 * Math.sin(t * 6))).toFixed(3));
+    calores.forEach(function (w, k) {
+      var x = (t * 0.7 + k / 3) % 1;
+      poner(w, 840 + k * 90, 455 - x * 110, 1, calor * Math.sin(x * Math.PI) * 0.8);
+    });
+    caen.forEach(function (n, k) {
+      var a = f[1].i + 0.7 + k * 0.22, q = p(t, a, 1.3);
+      poner(n.e, M.mezcla(n.x0, n.c.x, q) + 6 * Math.sin(t * 2 + k) * (1 - q), M.mezcla(n.y0, n.c.y, q), 1, 1 - p(t, a + 1.2, 0.35));
+    });
+    costra.forEach(function (c, k) { poner(c.e, c.x, c.y, Math.max(0.001, p(t, f[1].i + 1.5 + k * 0.11, 0.45, M.rebote))); });
+    etiquetaCal.setAttribute('opacity', p(t, f[1].i + 2.4, 0.5).toFixed(3));
+    grifo.setAttribute('opacity', p(t, f[2].i + 0.4, 0.6).toFixed(3));
+    lavadora.setAttribute('opacity', p(t, f[2].i + 0.9, 0.6).toFixed(3));
+    manchas.forEach(function (m, k) { poner(m.e, m.x, m.y, Math.max(0.001, p(t, f[2].i + 1.0 + k * 0.15, 0.4, M.rebote))); });
+    var caida = (t * 1.1) % 1;
+    poner(gotaGrifo, 920, 372 + caida * 70, 1, (1 - caida) * p(t, f[2].i + 0.6, 0.4));
+    costraLav.forEach(function (c, k) { poner(c.e, c.x, c.y, Math.max(0.001, p(t, f[2].i + 2.6 + k * 0.12, 0.4, M.rebote))); });
+  };
+});
+
+/* 3. El equipo: botella de resina y depósito de sal, a la entrada de la casa */
+M.escena('equipo', function (g, o) {
+  var f = o.f;
+  fondo(g);
+  el('line', { x1: 0, y1: 640, x2: 1280, y2: 640, stroke: C.linea, 'stroke-width': 4 }, g);
+
+  var casa = el('g', { opacity: 0 }, g);
+  el('rect', { x: 880, y: 250, width: 320, height: 390, fill: '#fff', stroke: C.marca, 'stroke-width': 6 }, casa);
+  el('path', { d: 'M852 266 L1040 120 L1228 266', fill: 'none', stroke: C.marca, 'stroke-width': 8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, casa);
+  el('path', { d: 'M880 280 H1010 V350 H1040 V368', fill: 'none', stroke: '#9fb3c8', 'stroke-width': 10, 'stroke-linejoin': 'round' }, casa);
+  el('path', { d: 'M975 478 H1125 L1112 520 Q1105 540 1085 540 H1015 Q995 540 988 520 Z', fill: '#c9d3dd', stroke: '#9fb3c8', 'stroke-width': 3, 'stroke-linejoin': 'round' }, casa);
+  el('rect', { x: 1042, y: 540, width: 16, height: 100, fill: '#dbe4ee' }, casa);
+  var gotaCasa = el('path', { d: 'M0 -12 C 5 -4 8 0 8 4 a8 8 0 0 1 -16 0 C -8 0 -5 -4 0 -12Z', fill: '#4fa8dc' }, casa);
+
+  var entrada = tubo(g, 'M-20 280 H392');
+  var salida = tubo(g, 'M488 280 H880');
+  var sucios = [];
+  for (var k = 0; k < 8; k++) { sucios.push(ion(g, 'Ca', 8)); }
+  var limpios = [];
+  for (k = 0; k < 8; k++) { limpios.push(el('circle', { r: 6, fill: '#4fa8dc' }, g)); }
+
+  var equipo = el('g', { opacity: 0 }, g);
+  el('path', { d: 'M488 302 H560 V420', fill: 'none', stroke: C.marca, 'stroke-width': 5 }, equipo);
+  el('rect', { x: 402, y: 318, width: 76, height: 302, rx: 34, fill: '#e8f0f7', stroke: C.marca, 'stroke-width': 5 }, equipo);
+  for (var y = 340; y < 600; y += 13) {
+    for (var x = 416 + ((y / 13) % 2) * 6; x < 466; x += 13) {
+      el('circle', { cx: x, cy: y, r: 5.5, fill: C.resina, stroke: C.resinaBorde, 'stroke-width': 1.2 }, equipo);
+    }
+  }
+  el('rect', { x: 392, y: 248, width: 96, height: 72, rx: 12, fill: C.marca }, equipo);
+  el('rect', { x: 412, y: 266, width: 40, height: 22, rx: 4, fill: '#8cc8ea' }, equipo);
+  el('rect', { x: 520, y: 420, width: 160, height: 200, rx: 16, fill: '#fff', stroke: C.marca, 'stroke-width': 5 }, equipo);
+  el('rect', { x: 525, y: 560, width: 150, height: 56, fill: C.agua }, equipo);
+  for (y = 600; y > 490; y -= 12) {
+    for (x = 532 + ((y / 12) % 2) * 8; x < 664; x += 17) {
+      el('rect', { x: x, y: y, width: 13, height: 9, rx: 3, fill: '#fff', stroke: C.salBorde, 'stroke-width': 1.3 }, equipo);
+    }
+  }
+  el('line', { x1: 520, y1: 448, x2: 680, y2: 448, stroke: C.marca, 'stroke-width': 4 }, equipo);
+  var marcoResina = el('rect', { x: 392, y: 308, width: 96, height: 322, rx: 44, fill: 'none', stroke: C.acento, 'stroke-width': 6, opacity: 0 }, equipo);
+  var marcoSal = el('rect', { x: 508, y: 408, width: 184, height: 224, rx: 24, fill: 'none', stroke: C.acento, 'stroke-width': 6, opacity: 0 }, equipo);
+
+  var etRed = pastilla(g, 150, 222, 'Agua de la red', { size: 24 });
+  var etEquipo = pastilla(g, 440, 200, 'Descalcificador', { size: 26, fondo: C.marca, borde: C.marca, color: '#fff' });
+  var etSalida = pastilla(g, 720, 225, 'Agua descalcificada', { size: 24 });
+  var lineaResina = el('line', { x1: 330, y1: 470, x2: 400, y2: 470, stroke: C.acento, 'stroke-width': 4, opacity: 0 }, g);
+  var etResina = pastilla(g, 220, 470, 'Botella con resina', { size: 24, color: C.acento, borde: C.acento });
+  var lineaSal = el('line', { x1: 600, y1: 634, x2: 600, y2: 662, stroke: C.acento, 'stroke-width': 4, opacity: 0 }, g);
+  var etSal = pastilla(g, 600, 688, 'Depósito de sal', { size: 24, color: C.acento, borde: C.acento });
+
+  return function (t) {
+    entrada.dibujar(p(t, 0.1, 1.0, M.lineal));
+    salida.dibujar(p(t, f[0].i + 1.1, 0.9, M.lineal));
+    entrada.fluir(t); salida.fluir(t);
+    var aE = p(t, f[0].i + 0.3, 0.6, M.salida);
+    poner(equipo, 0, 30 * (1 - aE), 1, aE);
+    casa.setAttribute('opacity', p(t, f[0].i + 2.0, 0.6).toFixed(3));
+    var oS = p(t, 0.9, 0.4);
+    sucios.forEach(function (s, k) { var x = (t * 80 + k * 52) % 416 - 20; poner(s, x, 280, 1, oS * (x > 380 ? 0 : 1)); });
+    var oL = p(t, f[0].i + 2.0, 0.5);
+    limpios.forEach(function (s, k) { var pt = salida.punto((t * 80 + k * 49) % salida.L); poner(s, pt.x, pt.y, 1, oL); });
+    var caida = (t * 1.1) % 1;
+    poner(gotaCasa, 1040, 384 + caida * 85, 1, 1 - caida);
+    etRed.setAttribute('opacity', p(t, 0.5, 0.5).toFixed(3));
+    etEquipo.setAttribute('opacity', p(t, f[0].i + 0.7, 0.5).toFixed(3));
+    etSalida.setAttribute('opacity', p(t, f[0].i + 2.4, 0.5).toFixed(3));
+    var dur = f[1].f - f[1].i;
+    var hr = p(t, f[1].i + 0.38 * dur, 0.4), hs = p(t, f[1].i + 0.72 * dur, 0.4);
+    marcoResina.setAttribute('opacity', (hr * (0.65 + 0.35 * Math.sin(t * 5))).toFixed(3));
+    marcoSal.setAttribute('opacity', (hs * (0.65 + 0.35 * Math.sin(t * 5))).toFixed(3));
+    [lineaResina, etResina].forEach(function (e) { e.setAttribute('opacity', hr.toFixed(3)); });
+    [lineaSal, etSal].forEach(function (e) { e.setAttribute('opacity', hs.toFixed(3)); });
+  };
+});
+
+/* 4. Dentro de la botella: intercambio iónico */
+M.escena('resina', function (g, o) {
+  var f = o.f, az = M.azar(21);
+  fondo(g);
+  el('rect', { x: 330, y: 80, width: 360, height: 540, rx: 70, fill: '#eaf3fa', stroke: C.marca, 'stroke-width': 6 }, g);
+  var flujo = el('g', { 'clip-path': 'url(#clip-botella)' }, g);
+  var lineas = [];
+  for (var k = 0; k < 7; k++) {
+    lineas.push(el('line', { x1: 365 + k * 49, y1: 80, x2: 365 + k * 49, y2: 640, stroke: '#bfe0f3', 'stroke-width': 6, 'stroke-linecap': 'round', 'stroke-dasharray': '18 28' }, flujo));
+  }
+  var bolas = [], capa;
+  var fila = 0;
+  for (var y = 150; y <= 585; y += 40, fila++) {
+    for (var x = 384 + (fila % 2) * 25; x <= 650; x += 50) {
+      var a = -Math.PI / 4 + (az() - 0.5) * 1.2;
+      var b = { x: x, y: y, sx: x + Math.cos(a) * 18, sy: y + Math.sin(a) * 18, aparece: 0.3 + (y - 150) / 435 * 1.6 + az() * 0.3 };
+      b.e = el('g', {}, flujo);
+      el('circle', { r: 20, fill: C.resina, stroke: C.resinaBorde, 'stroke-width': 2.5 }, b.e);
+      el('circle', { cx: -6, cy: -6, r: 5, fill: '#fff', opacity: 0.55 }, b.e);
+      bolas.push(b);
+    }
+  }
+  capa = el('g', {}, g);
+  bolas.forEach(function (b) { b.na = ion(capa, 'Na', 8); b.salidaX = 510 + (az() - 0.5) * 120; });
+  var orden = bolas.map(function (b, i) { return { i: i, k: b.y + az() * 90 }; }).sort(function (u, v) { return u.k - v.k; });
+  var N = 32, desde = f[0].i + 2.6, hasta = f[2].i + 1.0;
+  var iones = [];
+  for (k = 0; k < N; k++) {
+    var bola = bolas[orden[k].i];
+    var ini = desde + k * (hasta - desde) / N;
+    iones.push({ e: ion(capa, 'Ca', 9), b: bola, ini: ini, x0: bola.x + (az() - 0.5) * 50, llega: ini + 1.5 });
+    bola.libera = ini + 1.5;
+  }
+  el('path', { d: 'M510 6 V58', stroke: C.acento, 'stroke-width': 6, 'stroke-linecap': 'round' }, g);
+  el('path', { d: 'M496 46 L510 64 L524 46', fill: 'none', stroke: C.acento, 'stroke-width': 6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g);
+  texto(g, 488, 40, 'Agua dura', { ancla: 'end', size: 26, peso: 700, color: C.marca });
+  el('path', { d: 'M510 632 V692', stroke: C.acento, 'stroke-width': 6, 'stroke-linecap': 'round' }, g);
+  el('path', { d: 'M496 680 L510 698 L524 680', fill: 'none', stroke: C.acento, 'stroke-width': 6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g);
+  texto(g, 534, 676, 'Agua descalcificada', { ancla: 'start', size: 26, peso: 700, color: C.marca });
+
+  var titulo = texto(g, 790, 112, 'Dentro de la botella', { ancla: 'start', size: 36, peso: 800, color: C.marca });
+  function fila2(y, icono, t1, t2) {
+    var gg = el('g', { opacity: 0 }, g);
+    gg.appendChild(icono); poner(icono, 822, y);
+    texto(gg, 858, y - 4, t1, { ancla: 'start', size: 30, peso: 700 });
+    texto(gg, 858, y + 30, t2, { ancla: 'start', size: 24, peso: 500, color: C.tinta2 });
+    return gg;
+  }
+  var iconoResina = el('g');
+  el('circle', { r: 20, fill: C.resina, stroke: C.resinaBorde, 'stroke-width': 3 }, iconoResina);
+  el('circle', { cx: -6, cy: -6, r: 5, fill: '#fff', opacity: 0.55 }, iconoResina);
+  var filaResina = fila2(200, iconoResina, 'Resina', 'miles de bolitas');
+  var filaCal = fila2(320, ion(null, 'Ca', 20), 'Calcio y magnesio', 'se quedan en la resina');
+  var filaSodio = fila2(440, ion(null, 'Na', 20), 'Sodio', 'pasa al agua a cambio');
+  var filaAgua = fila2(560, check(null), 'Agua descalcificada', 'para toda la casa');
+
+  return function (t) {
+    lineas.forEach(function (l, k) { l.setAttribute('stroke-dashoffset', (-(t * 60 + k * 11) % 46).toFixed(1)); });
+    bolas.forEach(function (b) {
+      var s = Math.max(0.001, p(t, b.aparece, 0.45, M.rebote));
+      poner(b.e, b.x, b.y, s);
+      if (b.libera === undefined || t < b.libera) { poner(b.na, b.sx, b.sy, s); return; }
+      var q = p(t, b.libera, 1.7);
+      poner(b.na, M.mezcla(b.sx, b.salidaX, q) + 5 * Math.sin(t * 3 + b.x) * (1 - q), M.mezcla(b.sy, 640, q), 1, 1 - p(t, b.libera + 1.3, 0.4));
+    });
+    iones.forEach(function (n, k) {
+      var q = p(t, n.ini, 1.5, M.salida);
+      var x = M.mezcla(n.x0, n.b.sx, q) + 6 * Math.sin(t * 2.5 + k) * (1 - q), y = M.mezcla(40, n.b.sy, q);
+      poner(n.e, x, y, 1, t < n.ini ? 0 : Math.min(1, (t - n.ini) / 0.3));
+    });
+    titulo.setAttribute('opacity', p(t, 0.3, 0.5).toFixed(3));
+    filaResina.setAttribute('opacity', p(t, f[0].i + 1.4, 0.5).toFixed(3));
+    filaCal.setAttribute('opacity', p(t, f[1].i + 0.2, 0.5).toFixed(3));
+    filaSodio.setAttribute('opacity', p(t, f[1].i + 0.6 * (f[1].f - f[1].i), 0.5).toFixed(3));
+    filaAgua.setAttribute('opacity', p(t, f[2].i + 0.3, 0.5).toFixed(3));
+  };
+});
+
+/* 5. Regeneración: la sal limpia la resina y la cal va al desagüe */
+M.escena('regeneracion', function (g, o) {
+  var f = o.f, az = M.azar(35);
+  fondo(g);
+  var desague = tubo(g, 'M300 610 V665 H140');
+  el('rect', { x: 200, y: 130, width: 320, height: 480, rx: 64, fill: '#eaf3fa', stroke: C.marca, 'stroke-width': 6 }, g);
+  var bolas = [], fila = 0;
+  for (var y = 190; y <= 565; y += 37, fila++) {
+    for (var x = 240 + (fila % 2) * 21; x <= 484; x += 42) {
+      var a = -Math.PI / 4 + (az() - 0.5) * 1.2;
+      var b = { x: x, y: y, sx: x + Math.cos(a) * 15, sy: y + Math.sin(a) * 15, k: y + az() * 80 };
+      b.e = el('g', {}, g);
+      el('circle', { r: 18, fill: C.resina, stroke: C.resinaBorde, 'stroke-width': 2.5 }, b.e);
+      el('circle', { cx: -5, cy: -5, r: 4, fill: '#fff', opacity: 0.55 }, b.e);
+      poner(b.e, x, y);
+      bolas.push(b);
+    }
+  }
+  var capa = el('g', {}, g);
+  var orden = bolas.slice().sort(function (u, v) { return u.k - v.k; });
+  var N = orden.length, ya = Math.round(N * 0.35);
+  var dur2 = f[2].f - f[2].i;
+  orden.forEach(function (b, r) {
+    b.ca = ion(capa, 'Ca', 8.5);
+    b.naVieja = ion(capa, 'Na', 7.5);
+    b.naNueva = ion(capa, 'Na', 7.5);
+    b.satura = r < ya ? -1 : 0.6 + (r - ya) * 2.2 / (N - ya);
+    b.cambia = f[2].i - 0.3 + r * (dur2 + 0.4) / N;
+    b.y0 = 215 + (az() - 0.5) * 30;
+    b.salidaX = 300 + (az() - 0.5) * 60;
+  });
+  var saturada = pastilla(g, 360, 82, 'Resina saturada', { size: 24, fondo: '#fbe8d8', borde: '#f0c7a3', color: '#8a3f00' });
+  var lista = el('g', {}, g);
+  pastilla(lista, 375, 82, 'Resina lista', { size: 24, fondo: '#e3f4ec', borde: '#b5dfc8', color: '#17663f', visible: true });
+  poner(check(lista), 268, 82, 0.8);
+
+  var titulo = el('g', { opacity: 0 }, g);
+  texto(titulo, 950, 100, 'Regeneración', { size: 42, peso: 800, color: C.marca });
+  texto(titulo, 950, 142, 'cada pocos días, automática', { size: 26, peso: 500, color: C.tinta2 });
+  var salmuera = tubo(g, 'M950 330 V215 H530');
+  var deposito = el('g', {}, g);
+  el('rect', { x: 820, y: 330, width: 260, height: 280, rx: 18, fill: '#fff', stroke: C.marca, 'stroke-width': 5 }, deposito);
+  el('rect', { x: 826, y: 480, width: 248, height: 124, fill: C.agua }, deposito);
+  for (y = 590; y > 410; y -= 13) {
+    for (x = 834 + ((y / 13) % 2) * 9; x < 1062; x += 18) {
+      el('rect', { x: x, y: y, width: 14, height: 10, rx: 3, fill: '#fff', stroke: C.salBorde, 'stroke-width': 1.3 }, deposito);
+    }
+  }
+  el('line', { x1: 820, y1: 360, x2: 1080, y2: 360, stroke: C.marca, 'stroke-width': 4 }, deposito);
+  texto(deposito, 950, 660, 'Agua con sal', { size: 26, peso: 700, color: C.marca });
+  var enTubo = [];
+  for (var k = 0; k < 14; k++) { enTubo.push(ion(g, 'Na', 6.5)); }
+  var etDesague = el('g', { opacity: 0 }, g);
+  el('rect', { x: 84, y: 645, width: 56, height: 40, rx: 6, fill: '#c9d3dd', stroke: '#8a99a8', 'stroke-width': 3 }, etDesague);
+  for (k = 0; k < 4; k++) { el('line', { x1: 94 + k * 12, y1: 653, x2: 94 + k * 12, y2: 677, stroke: '#8a99a8', 'stroke-width': 3 }, etDesague); }
+  texto(etDesague, 112, 628, 'Desagüe', { size: 26, peso: 700, color: C.marca });
+
+  return function (t) {
+    var q;
+    orden.forEach(function (b) {
+      // Antes de la regeneración: sodio que se va cambiando por cal (de arriba abajo)
+      var lleno = b.satura < 0 ? 1 : p(t, b.satura, 0.35);
+      poner(b.naVieja, b.sx, b.sy, Math.max(0.001, 1 - lleno));
+      // Llega sodio nuevo desde arriba
+      var llega = p(t, b.cambia - 1.0, 1.0, M.salida);
+      poner(b.naNueva, M.mezcla(515, b.sx, llega), M.mezcla(b.y0, b.sy, llega), 1, t < b.cambia - 1.0 ? 0 : 1);
+      // La cal se suelta, baja y sale por el desagüe
+      if (t < b.cambia) { poner(b.ca, b.sx, b.sy, Math.max(0.001, lleno)); return; }
+      q = p(t, b.cambia, 1.0);
+      if (q < 1) { poner(b.ca, M.mezcla(b.sx, b.salidaX, q), M.mezcla(b.sy, 610, q), 1, 1); return; }
+      var r = p(t, b.cambia + 1.0, 0.8, M.lineal);
+      var pt = desague.punto(r * desague.L);
+      poner(b.ca, pt.x, pt.y, 1, 1 - p(t, b.cambia + 1.6, 0.2));
+    });
+    saturada.setAttribute('opacity', (p(t, f[0].i + 1.6, 0.4) * (1 - p(t, f[3].i - 0.2, 0.3))).toFixed(3));
+    lista.setAttribute('opacity', p(t, f[3].i + 0.1, 0.4).toFixed(3));
+    titulo.setAttribute('opacity', p(t, f[1].i, 0.5).toFixed(3));
+    salmuera.dibujar(p(t, f[1].i + 0.6, 0.8, M.lineal));
+    salmuera.fluir(t);
+    var flujo = p(t, f[1].i + 1.4, 0.4) * (1 - p(t, f[3].i, 0.5));
+    enTubo.forEach(function (e, k) { var pt = salmuera.punto((t * 90 + k * salmuera.L / 14) % salmuera.L); poner(e, pt.x, pt.y, 1, flujo); });
+    desague.dibujar(p(t, f[2].i - 0.6, 0.6, M.lineal));
+    desague.fluir(t);
+    etDesague.setAttribute('opacity', p(t, f[2].i - 0.2, 0.5).toFixed(3));
+  };
+});
+
+/* 6. Mantenimiento: rellenar la sal y una revisión al año */
+M.escena('mantenimiento', function (g, o) {
+  var f = o.f, az = M.azar(52);
+  fondo(g);
+  el('rect', { x: 360, y: 230, width: 260, height: 390, rx: 22, fill: '#fff', stroke: C.marca, 'stroke-width': 6 }, g);
+  el('rect', { x: 366, y: 470, width: 248, height: 144, fill: C.agua }, g);
+  var granos = [], filas = 0;
+  for (var y = 600; y > 262; y -= 13, filas++) {
+    for (var x = 378 + (filas % 2) * 9; x < 600; x += 18) {
+      granos.push({ e: el('rect', { x: x, y: y, width: 14, height: 10, rx: 3, fill: '#fff', stroke: C.salBorde, 'stroke-width': 1.3 }, g), fila: filas });
+    }
+  }
+  var tapa = el('g', {}, g);
+  el('rect', { x: 0, y: -14, width: 284, height: 28, rx: 10, fill: C.marca }, tapa);
+  var saco = el('g', { opacity: 0 }, g);
+  var sacoDentro = el('g', {}, saco);
+  el('path', { d: 'M-70 -95 L70 -95 L84 95 Q0 112 -84 95 Z', fill: '#f4f7fa', stroke: C.salBorde, 'stroke-width': 5, 'stroke-linejoin': 'round' }, sacoDentro);
+  el('path', { d: 'M-70 -95 Q0 -118 70 -95', fill: 'none', stroke: C.salBorde, 'stroke-width': 5 }, sacoDentro);
+  texto(sacoDentro, 0, 18, 'SAL', { size: 44, peso: 800, color: C.marca });
+  var cayendo = [];
+  for (var k = 0; k < 34; k++) {
+    cayendo.push({ e: el('rect', { x: -7, y: -5, width: 14, height: 10, rx: 3, fill: '#fff', stroke: C.salBorde, 'stroke-width': 1.3 }, g), dx: 400 + az() * 180, ini: az() });
+  }
+  var etiqueta = pastilla(g, 490, 672, 'Rellenar la sal de vez en cuando', { size: 24 });
+
+  var revision = el('g', { opacity: 0 }, g);
+  var cal = el('g', {}, revision);
+  el('rect', { x: -80, y: -75, width: 160, height: 150, rx: 16, fill: '#fff', stroke: C.marca, 'stroke-width': 5 }, cal);
+  el('path', { d: 'M-80 -45 V-59 a16 16 0 0 1 16 -16 H64 a16 16 0 0 1 16 16 V-45 Z', fill: C.acento }, cal);
+  el('rect', { x: -48, y: -90, width: 10, height: 28, rx: 5, fill: C.marca }, cal);
+  el('rect', { x: 38, y: -90, width: 10, height: 28, rx: 5, fill: C.marca }, cal);
+  texto(cal, 0, 28, '1', { size: 64, peso: 800, color: C.marca });
+  texto(cal, 0, 58, 'vez al año', { size: 18, peso: 600, color: C.tinta2 });
+  var textoRev = el('g', { opacity: 0 }, g);
+  texto(textoRev, 1000, 460, 'Revisión anual', { size: 36, peso: 800, color: C.marca });
+  texto(textoRev, 1000, 500, 'por un técnico', { size: 26, peso: 500, color: C.tinta2 });
+
+  function nivel(t) {
+    var baja = p(t, 0.2, 1.1);
+    var sube = p(t, f[0].i + 1.6, Math.max(1, f[0].f - f[0].i - 1.0), M.lineal);
+    return M.mezcla(M.mezcla(0.72, 0.16, baja), 0.84, sube);
+  }
+  return function (t) {
+    var n = nivel(t) * filas;
+    granos.forEach(function (gr) { gr.e.setAttribute('opacity', gr.fila < n ? 1 : 0); });
+    var abre = p(t, f[0].i + 0.9, 0.5) * (1 - p(t, f[0].f + 0.3, 0.5));
+    set(tapa, { transform: 'translate(348 ' + (216 - 40 * abre).toFixed(1) + ') rotate(' + (-16 * abre).toFixed(2) + ')' });
+    var entra = p(t, f[0].i + 0.7, 0.6, M.salida), gira = p(t, f[0].i + 1.2, 0.5);
+    saco.setAttribute('opacity', (entra * (1 - p(t, f[1].i - 0.3, 0.4))).toFixed(3));
+    set(saco, { transform: 'translate(' + (760 + 120 * (1 - entra)).toFixed(1) + ' 160)' });
+    set(sacoDentro, { transform: 'rotate(' + (-62 * gira).toFixed(2) + ')' });
+    var desde = f[0].i + 1.5, durCaida = Math.max(1.2, f[0].f - desde);
+    cayendo.forEach(function (c) {
+      var a = desde + c.ini * durCaida, q = p(t, a, 0.6, M.lineal);
+      var fondoY = 600 - nivel(a + 0.6) * filas * 13;
+      poner(c.e, M.mezcla(690, c.dx, q), 170 + (fondoY - 170) * q * q, 1, q > 0 && q < 1 ? 1 : 0);
+    });
+    etiqueta.setAttribute('opacity', p(t, f[0].i + 0.4, 0.5).toFixed(3));
+    revision.setAttribute('opacity', p(t, f[1].i + 0.1, 0.4).toFixed(3));
+    set(cal, { transform: 'translate(1000 290) scale(' + Math.max(0.001, p(t, f[1].i + 0.1, 0.5, M.rebote)).toFixed(3) + ')' });
+    textoRev.setAttribute('opacity', p(t, f[1].i + 0.6, 0.5).toFixed(3));
+  };
+});
+
+/* 7. Cierre: depende de la dureza de tu municipio */
+M.escena('cierre', function (g, o) {
+  var f = o.f;
+  fondo(g);
+  var arriba = el('g', {}, g);
+  var titulo = texto(arriba, 640, 150, '¿Te merece la pena?', { size: 52, peso: 800, color: C.marca });
+  var sub = texto(arriba, 640, 215, 'Depende de la dureza del agua de tu municipio', { size: 30, peso: 500, color: C.tinta2 });
+  var medidor = el('g', { opacity: 0 }, arriba);
+  var tramos = [[0, 15, C.blanda, 'Blanda'], [15, 30, C.media, 'Moderada'], [30, 40, C.dura, 'Dura'], [40, 60, C.muyDura, 'Muy dura']];
+  var barra = el('g', { 'clip-path': 'url(#clip-medidor)' }, medidor);
+  tramos.forEach(function (tr) {
+    var x1 = 240 + tr[0] / 60 * 800, x2 = 240 + tr[1] / 60 * 800;
+    el('rect', { x: x1, y: 330, width: x2 - x1, height: 40, fill: tr[2] }, barra);
+    texto(medidor, (x1 + x2) / 2, 410, tr[3], { size: 24, peso: 700, color: C.tinta });
+  });
+  [0, 15, 30, 40, 60].forEach(function (v) { texto(medidor, 240 + v / 60 * 800, 315, v === 60 ? '60 °fH' : String(v), { size: 18, peso: 500, color: C.tinta2 }); });
+  var aguja = el('g', {}, medidor);
+  el('path', { d: 'M-14 -34 L14 -34 L0 -12 Z', fill: C.marca }, aguja);
+  el('rect', { x: -2.5, y: -12, width: 5, height: 52, rx: 2, fill: C.marca }, aguja);
+
+  var final = el('g', { opacity: 0 }, g);
+  var logo = gota(final);
+  var marca = el('text', { x: 640, y: 470, 'text-anchor': 'middle', 'font-size': 78, 'font-weight': 800, fill: C.marca }, final);
+  el('tspan', {}, marca, 'Agua');
+  el('tspan', { fill: C.acento }, marca, 'SinCal');
+  el('tspan', { fill: C.tinta2, 'font-weight': 600 }, marca, '.es');
+  texto(final, 640, 530, 'Consulta gratis la dureza del agua de tu municipio', { size: 28, peso: 500, color: C.tinta2 });
+
+  return function (t) {
+    poner(titulo, 0, 0, 1, p(t, 0.2, 0.5));
+    sub.setAttribute('opacity', p(t, f[0].i + 1.2, 0.5).toFixed(3));
+    var aM = p(t, f[0].i + 0.6, 0.6, M.salida);
+    poner(medidor, 0, 20 * (1 - aM), 1, aM);
+    var pos = M.mezcla(M.mezcla(0.06, 0.92, p(t, f[0].i + 1.4, 1.1)), 0.6, p(t, f[0].i + 2.6, 0.9));
+    poner(aguja, 240 + pos * 800, 330);
+    var cambio = p(t, f[1].i - 0.2, 0.6);
+    poner(arriba, 0, -40 * cambio, 1, 1 - cambio);
+    final.setAttribute('opacity', cambio.toFixed(3));
+    poner(logo, 640, 330, Math.max(0.001, 3.4 * p(t, f[1].i, 0.7, M.rebote)));
+  };
+});
+
+/* Marca discreta en la esquina mientras se explica */
+window.encima = function (g) {
+  window.marcaEsquina = el('g', { opacity: 0 }, g);
+  poner(gota(window.marcaEsquina), 1112, 688, 0.85);
+  texto(window.marcaEsquina, 1128, 696, 'AguaSinCal.es', { ancla: 'start', size: 20, peso: 700, color: C.marca });
+};
+window.encimaPintar = function (t, l) {
+  var e = l.escenas;
+  var o = p(t, e[1].inicio + 0.3, 0.5) * (1 - p(t, e[e.length - 1].inicio, 0.4));
+  window.marcaEsquina.setAttribute('opacity', (o * 0.8).toFixed(3));
+};
+</script>
+</body>
+</html>

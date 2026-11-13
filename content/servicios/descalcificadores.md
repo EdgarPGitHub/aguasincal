@@ -9,6 +9,7 @@ entradilla: "Protege tuberías, termo, caldera y electrodomésticos de la cal. C
 resumen: "Elimina la cal de toda el agua de la casa o el negocio. Venta y alquiler con instalación y mantenimiento."
 ruta: /descalcificadores/
 estado: publicado
+video: descalcificador
 revision: tecnica
 actualizado: 2026-10-05
 ---

@@ -84,6 +84,23 @@ Los secretos y variables necesarios están en [docs/PASOS.md](docs/PASOS.md).
 - `scripts/sinac.php`: descarga del SINAC los datos del agua de cada municipio a `data/sinac.jsonl`. Lo hace sola la tarea semanal de GitHub (`datos-agua.yml`, 3 partes en paralelo).
 - `data/empresas.csv` (opcional): fichas del directorio añadidas por nosotros. La web las importa sola al cambiar el archivo y nunca pisa lo que haya cambiado la empresa.
 
+## Vídeos explicativos
+
+Animaciones propias con voz, montadas en local (no en GitHub Actions) y publicadas como MP4 H.264 + AAC en `assets/videos/`, con portada JPG, subtítulos VTT, página propia en `/videos/…/` con transcripción y datos estructurados `VideoObject`. Todo gratis y sin servicios externos.
+
+- `videos/<nombre>/guion.json`: textos (cada frase es un subtítulo), ruta, páginas relacionadas y voz.
+- `videos/<nombre>/escenas.html`: el dibujo (SVG) de cada escena, sincronizado con las frases. Piezas comunes en `videos/piezas.js` y `videos/motor.js`.
+- Una página incrusta un vídeo con `video: <nombre>` en su front matter.
+
+```bash
+pip install piper-tts soundfile        # una vez; voz es_ES-sharvard-medium en var/videos/modelos/
+python3 scripts/video-voz.py videos/descalcificador                  # narración y tiempos
+node scripts/video-render.js videos/descalcificador --fotos=10,30    # capturas para revisar
+node scripts/video-render.js videos/descalcificador                  # MP4, portada, subtítulos y video.json
+```
+
+Si una palabra suena rara: poner coma tras conectores («Por eso, …») o usar `{"texto": "…", "voz": "…"}` en el guion.
+
 ## Directorio de empresas
 
 Páginas PHP (`app/src/Controladores/Empresas.php`): `/empresas/`, `/empresas/{provincia}/{municipio}/`, `/empresa/{slug}/`, alta, acceso con enlace por email y `sitemap-empresas.xml`. Cada empresa es una fila de `profesionales` con ficha pública (`app/src/Directorio.php`), así que también puede recibir leads. Orden: destacadas vigentes primero y luego por cercanía, dentro del radio de cada empresa.

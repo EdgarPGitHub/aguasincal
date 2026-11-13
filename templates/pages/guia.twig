@@ -7,6 +7,7 @@
       {% if pagina.entradilla ?? '' %}<p class="entradilla">{{ pagina.entradilla }}</p>{% endif %}
       {% include 'components/revision.twig' %}
     </header>
+    {% if video ?? null %}{% include 'components/video.twig' with {v: video, enlace: true} only %}{% endif %}
     <div class="prosa">{{ contenido_html|raw }}</div>
     <div class="tarjeta cta-final">
       {% include 'components/formulario.twig' with {servicio: servicio_form, origen: pagina.ruta, titulo: pagina.cta ?? '¿Quieres que lo vea un profesional?', texto: 'Pide presupuesto gratis. Te atiende un profesional verificado de tu zona.'} only %}

@@ -1,0 +1,9 @@
+{#- Vídeo explicativo: MP4 con portada y subtítulos. Se descarga solo al pulsar «play» (preload="none"). -#}
+<figure class="video">
+  <video controls preload="none" playsinline poster="{{ v.portada }}" width="{{ v.ancho }}" height="{{ v.alto }}">
+    <source src="{{ v.mp4 }}" type="video/mp4">
+    <track kind="captions" src="{{ v.subtitulos }}" srclang="es" label="Español">
+    <a href="{{ v.mp4 }}">Descargar el vídeo</a>
+  </video>
+  <figcaption>{{ v.titulo }} · {{ v.duracion_texto }} min, con subtítulos{% if enlace ?? false %} · <a href="{{ v.ruta }}">Leer la transcripción</a>{% endif %}</figcaption>
+</figure>

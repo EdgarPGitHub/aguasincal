@@ -232,6 +232,15 @@ input[type="checkbox"] { width: 20px; height: 20px; flex: none; margin: 2px 0 0;
 .lista-enlaces { list-style: none; padding: 0; margin: 0; }
 .lista-enlaces li { padding: 9px 0; border-bottom: 1px solid var(--linea); }
 .lista-enlaces a { text-decoration: none; font-weight: 500; }
+
+/* Vídeos */
+.video { margin: 0 0 1.75rem; }
+.video video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 12px; background: var(--fondo-suave); }
+.video figcaption { margin-top: 8px; font-size: .875rem; color: var(--tinta-2); }
+.videos-lista { list-style: none; padding: 0; margin: 0 0 2.5rem; display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.video-tarjeta a { text-decoration: none; }
+.video-tarjeta img { display: block; width: 100%; height: auto; border-radius: 10px; margin-bottom: 10px; }
+.video-tarjeta__titulo { font-weight: 700; font-size: 1.05rem; color: var(--tinta); }
 .lista-columnas { columns: 3 180px; padding: 0; list-style: none; }
 .lista-columnas li { padding: 4px 0; break-inside: avoid; }
 .lista-zonas { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; }
