@@ -34,15 +34,15 @@
     {
       "id": "equipo",
       "frases": [
-        "Un descalcificador se instala a la entrada del agua de la casa.",
-        "Tiene dos partes: una botella con resina y un depósito de sal."
+        "Un descalcificador se instala | a la entrada del agua de la casa.",
+        "Tiene dos partes: una botella con resina | y un depósito de sal."
       ]
     },
     {
       "id": "resina",
       "frases": [
         "El agua atraviesa la resina, que está formada por miles de bolitas diminutas.",
-        "Las bolitas atrapan el calcio y el magnesio y, a cambio, sueltan sodio.",
+        "Las bolitas atrapan el calcio y el magnesio | y, a cambio, sueltan sodio.",
         "Así, a toda la casa llega agua descalcificada."
       ]
     },
@@ -52,25 +52,26 @@
         "Con el uso, la resina se va llenando de cal.",
         "Cada pocos días, el equipo se limpia solo, con agua y sal.",
         "La sal arranca la cal de la resina, y la cal se va por el desagüe.",
-        "Y la resina queda lista para seguir trabajando."
+        "Y la resina queda lista | para seguir trabajando."
       ]
     },
     {
       "id": "mantenimiento",
       "frases": [
-        "Tú solo tienes que rellenar el depósito de sal de vez en cuando.",
-        "Y conviene que un técnico revise el equipo una vez al año."
+        "Tú solo tienes que rellenar el depósito de sal | de vez en cuando.",
+        "Y conviene que un técnico revise el equipo | una vez al año."
       ]
     },
     {
       "id": "cierre",
       "frases": [
-        "¿Te merece la pena? Depende de la dureza del agua de tu municipio.",
+        "¿Te merece la pena? Depende de la dureza del agua | de tu municipio.",
         {
           "texto": "Consúltala gratis en AguaSinCal.es.",
-          "voz": "Consúltala gratis en Agua Sin Cal punto es."
+          "voz": "Consúltala gratis | en Agua Sin Cal punto es."
         }
       ]
     }
-  ]
+  ],
+  "pausa_coma": 0.22
 }

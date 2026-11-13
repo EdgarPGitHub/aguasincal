@@ -86,21 +86,20 @@ Los secretos y variables necesarios están en [docs/PASOS.md](docs/PASOS.md).
 
 ## Vídeos explicativos
 
-Animaciones propias con voz, montadas en local (no en GitHub Actions) y publicadas como MP4 H.264 + AAC en `assets/videos/`, con portada JPG, subtítulos VTT, página propia en `/videos/…/` con transcripción y datos estructurados `VideoObject`. Todo gratis y sin servicios externos. La voz es Qwen3-TTS (Apache 2.0): se diseña una vez y se clona en cada vídeo para que siempre sea la misma; cada frase se revisa sola transcribiéndola.
+Animaciones propias con voz, montadas en local (no en GitHub Actions) y publicadas como MP4 H.264 + AAC en `assets/videos/`, con portada JPG, subtítulos VTT, página propia en `/videos/…/` con transcripción y datos estructurados `VideoObject`. Todo gratis y sin servicios externos.
 
 - `videos/<nombre>/guion.json`: textos (cada frase es un subtítulo), ruta, páginas relacionadas y voz.
 - `videos/<nombre>/escenas.html`: el dibujo (SVG) de cada escena, sincronizado con las frases. Piezas comunes en `videos/piezas.js` y `videos/motor.js`.
 - Una página incrusta un vídeo con `video: <nombre>` en su front matter.
 
 ```bash
-pip install qwen-tts soundfile faster-whisper   # una vez (los modelos se descargan solos)
-python3 scripts/video-voz.py --disenar                               # una vez: voz de referencia (videos/voz/voz.json)
+pip install piper-tts soundfile        # una vez; voz es_ES-sharvard-medium en var/videos/modelos/
 python3 scripts/video-voz.py videos/descalcificador                  # narración y tiempos
 node scripts/video-render.js videos/descalcificador --fotos=10,30    # capturas para revisar
 node scripts/video-render.js videos/descalcificador                  # MP4, portada, subtítulos y video.json
 ```
 
-Si una palabra suena rara: poner coma tras conectores («Por eso, …») o usar `{"texto": "…", "voz": "…"}` en el guion.
+Para que suene natural: coma tras conectores («Por eso, …»), « | » para una pausa de respiración que no sale en los subtítulos y `{"texto": "…", "voz": "…"}` para palabras que se leen mal.
 
 ## Directorio de empresas
 
