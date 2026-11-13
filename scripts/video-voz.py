@@ -12,7 +12,8 @@ Las frases ya generadas se reutilizan (caché por texto y ajustes de voz).
 
 Cómo escribir el guion para que suene natural:
   - Coma tras conectores («Por eso, …», «Así, …»): la voz hace una pausa real en cada coma.
-  - « | » marca una pausa de respiración que no sale en los subtítulos («… la resina | que está formada …»).
+  - « | » marca una pausa de respiración que no sale en los subtítulos. Solo entre trozos largos: un trozo corto
+    suelto («… | de vez en cuando») suena a frase nueva.
   - Una frase puede ser {"texto": "lo que se lee en pantalla", "voz": "lo que se pronuncia"} para corregir palabras
     que la voz lee mal (siglas, dominios, marcas).
 """
@@ -29,6 +30,7 @@ ENTRADA = 0.5      # silencio al empezar cada escena
 ENTRE_FRASES = 0.4
 FINAL = 0.9        # silencio al acabar cada escena (deja ver la animación)
 PAUSA = "|"        # pausa de respiración: se pronuncia como una coma y no aparece en los subtítulos
+VERSION = 2        # cambia la caché de frases cuando cambia la forma de generar la voz
 
 
 def main() -> None:
@@ -60,7 +62,7 @@ def main() -> None:
         for frase in escena["frases"]:
             texto, dicho = (frase, frase) if isinstance(frase, str) else (frase["texto"], frase.get("voz", frase["texto"]))
             texto = re.sub(r"\s*\|\s*", " ", texto).strip()
-            clave = hashlib.sha1(json.dumps([ajustes, dicho], sort_keys=True).encode()).hexdigest()[:16]
+            clave = hashlib.sha1(json.dumps([VERSION, ajustes, dicho], sort_keys=True).encode()).hexdigest()[:16]
             wav = os.path.join(cache, clave + ".wav")
             if not os.path.exists(wav):
                 if voz is None:
@@ -120,10 +122,10 @@ def hablar(voz, texto: str, ajustes: dict):
 
 def enlazar(fonemas: list) -> list:
     """
-    Une la consonante final de una palabra con la vocal de la siguiente, como se habla en español
-    («el agua» → e-la-gua). Sin esto la voz hace un pequeño corte que suena robótico.
+    Une la consonante final de una palabra con la vocal tónica de la siguiente, como se habla en español
+    («el agua» → e-la-gua). Solo ante vocal tónica: con palabras átonas («vez en cuando») suena peor.
     """
-    return list(re.sub(r"(?<=[^aeiou\s,.;:¿?¡!]) (?=[ˈˌ]?[aeiou])", "", "".join(fonemas)))
+    return list(re.sub(r"(?<=[^aeiou\s,.;:¿?¡!]) (?=ˈ[aeiou])", "", "".join(fonemas)))
 
 
 def recortar(audio: np.ndarray, sr: int) -> np.ndarray:
