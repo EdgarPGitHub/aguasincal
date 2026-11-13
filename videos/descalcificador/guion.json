@@ -21,7 +21,7 @@
     {
       "id": "intro",
       "frases": [
-        "Así funciona un descalcificador, explicado en poco más de un minuto."
+        "Te explicamos cómo funciona un descalcificador."
       ]
     },
     {
@@ -68,8 +68,8 @@
       "frases": [
         "¿Te merece la pena? Depende de la dureza del agua de tu municipio.",
         {
-          "texto": "Consúltala gratis en AguaSinCal.es.",
-          "voz": "Consúltala gratis en Agua Sin Cal punto es."
+          "texto": "Consúltala gratis en nuestra web, AguaSinCal.es.",
+          "voz": "Consúltala gratis en nuestra web, aguasincal punto es."
         }
       ]
     }
