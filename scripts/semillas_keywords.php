@@ -43,6 +43,14 @@ $genericas = [
     'fuente agua gimnasio', 'maquina agua filtrada empresa', 'agua filtrada restaurante', 'filtro agua cafetera industrial',
     'filtro agua entrada vivienda', 'filtro carbon activo agua', 'dureza del agua', 'agua dura', 'como saber la dureza del agua',
     'calculadora descalcificador', 'descalcificador comunidad de vecinos',
+    // Cómo funciona (vídeos) y temas vistos en webs de referencia
+    'como funciona un descalcificador', 'como funciona la osmosis inversa', 'como funciona una fuente de agua osmotizada',
+    'descalcificador magnetico', 'descalcificador sin sal', 'descalcificador ecologico', 'filtro antical polifosfatos',
+    'filtro antical termo', 'cambio resina descalcificador', 'precio resina descalcificador', 'descalcificador no ablanda',
+    'descalcificador agua salada', 'descalcificador hace ruido', 'descalcificador error', 'descalcificador no regenera',
+    'reparar o cambiar descalcificador', 'se puede beber agua descalcificada', 'agua descalcificada sodio',
+    'es sano beber agua de osmosis', 'osmosis o agua embotellada', 'consumo sal descalcificador', 'coste descalcificador al año',
+    'descalcificador cillit', 'descalcificador bwt', 'descalcificador kinetico', 'osmosis inversa opiniones',
 ];
 
 $lista = $genericas;
