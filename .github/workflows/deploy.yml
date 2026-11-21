@@ -77,6 +77,13 @@ jobs:
             echo "PANEL_ACTIVO=no" >> "$GITHUB_ENV"
           fi
           [ -n "$SMTP_PASS" ] || echo "::warning::Sin SMTP_PASS: los emails se guardan en el servidor (aguasincal-data/correo/) en vez de enviarse."
+          # Abrir la web a Google sin que lleguen las solicitudes de presupuesto haría perder clientes: no se permite.
+          if [ "$INDEXAR" = "si" ]; then
+            if [ -z "$SMTP_PASS" ] || [ "$(grep -c '^PANEL_ACTIVO=si' "$GITHUB_ENV")" = "0" ]; then
+              echo "::error::INDEXAR=si necesita antes SMTP_PASS, PANEL_RUTA, ADMIN_EMAIL y ADMIN_CLAVE: sin ellos nadie recibe ni ve las solicitudes de presupuesto. Créalos (docs/PASOS.md) o vuelve a poner INDEXAR=no."
+              exit 1
+            fi
+          fi
 
       - name: Instalar dependencias y pasar los tests
         run: |
@@ -171,6 +178,9 @@ jobs:
             echo "$cabeceras" | grep -qi 'x-robots-tag: noindex' || { echo "::error::La vista previa debería llevar X-Robots-Tag: noindex"; exit 1; }
             echo "Vista previa publicada (fuera de Google): https://$DOMINIO/"
           else
-            echo "Web publicada e indexable: https://$DOMINIO/"
+            echo "$cabeceras" | grep -qi 'x-robots-tag: noindex' && { echo "::error::La web sigue con X-Robots-Tag: noindex"; exit 1; }
+            curl -s "https://$DOMINIO/" | grep -qi '<meta name="robots" content="noindex' && { echo "::error::La portada sigue con noindex"; exit 1; }
+            curl -s "https://$DOMINIO/robots.txt" | grep -q "^Sitemap: https://$DOMINIO/sitemap.xml" || { echo "::error::robots.txt no enlaza el sitemap"; exit 1; }
+            echo "Web publicada e indexable: https://$DOMINIO/ (sitemap: https://$DOMINIO/sitemap.xml)"
           fi
           if [ "$PANEL_ACTIVO" = "si" ]; then echo "Panel: https://$DOMINIO/$PANEL_RUTA/"; else echo "Panel cerrado: faltan PANEL_RUTA, ADMIN_EMAIL o ADMIN_CLAVE."; fi

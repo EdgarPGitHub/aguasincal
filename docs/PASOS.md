@@ -143,14 +143,18 @@ En unos 3 minutos aparece un ✓ verde y la web está en https://aguasincal.es (
 ## Paso 5 · Lanzamiento
 
 1. Revisas la vista previa en aguasincal.es y das el visto bueno.
-2. Cambias la variable `INDEXAR` a `si` y vuelves a publicar (Actions → Despliegue → Run workflow).
-3. **Search Console:**
+2. **Antes, obligatorio:** los secretos `SMTP_PASS`, `PANEL_RUTA`, `ADMIN_EMAIL` y `ADMIN_CLAVE` (paso 3). Sin ellos las
+   solicitudes de presupuesto no llegan a nadie, así que el despliegue se niega a lanzar con `INDEXAR=si`.
+   Haz una solicitud de prueba y comprueba que te llega el email y que la ves en el panel.
+3. Cambias la variable `INDEXAR` a `si` y vuelves a publicar (Actions → Despliegue → Run workflow). El propio
+   despliegue comprueba que ya no hay noindex y que robots.txt enlaza el sitemap.
+4. **Search Console:**
    - Añade la propiedad de dominio `aguasincal.es` y verifícala con el registro TXT en el editor de zona DNS de Raiola.
    - Envía `https://aguasincal.es/sitemap.xml`.
-4. **Acceso de lectura para mí (recomendado), para analizar consultas y páginas:**
+5. **Acceso de lectura para mí (recomendado), para analizar consultas y páginas:**
    - Crea en Google Cloud una cuenta de servicio con la API de Search Console activada.
    - Añade su email como usuario de la propiedad.
    - Guarda su clave JSON como variable de entorno `GSC_SA_JSON` en los ajustes del entorno de Claude.
 
    Te guío cuando lleguemos.
-5. **Bing Webmaster Tools:** importa el sitio desde Search Console (2 minutos).
+6. **Bing Webmaster Tools:** importa el sitio desde Search Console (2 minutos).
