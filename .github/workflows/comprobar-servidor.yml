@@ -118,3 +118,20 @@ jobs:
             nota "- ❌ El SINAC no responde desde GitHub: los datos del agua no se podrán actualizar solos"
             exit 1
           fi
+
+      - name: Correo del dominio (DNS)
+        if: always()
+        run: |
+          nota() { echo "$1"; echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+          nota "## Correo de $DOMINIO"
+          mx=$(dig +short MX "$DOMINIO" | tr '\n' ' ')
+          spf=$(dig +short TXT "$DOMINIO" | grep -i 'v=spf1' | tr '\n' ' ')
+          dkim=$(dig +short TXT "default._domainkey.$DOMINIO" | tr -d '\n' | cut -c1-60)
+          dmarc=$(dig +short TXT "_dmarc.$DOMINIO" | tr '\n' ' ')
+          ns=$(dig +short NS "$DOMINIO" | tr '\n' ' ')
+          nota "- Servidores DNS: ${ns:-ninguno}"
+          [ -n "$mx" ] && nota "- ✅ MX (recibir correo): $mx" || nota "- ❌ Sin MX: los emails a info@$DOMINIO no llegan"
+          [ -n "$spf" ] && nota "- ✅ SPF: $spf" || nota "- ❌ Sin SPF: lo que envíe la web puede ir a spam"
+          [ -n "$dkim" ] && nota "- ✅ DKIM: ${dkim}…" || nota "- ❌ Sin DKIM (default._domainkey): lo que envíe la web puede ir a spam"
+          [ -n "$dmarc" ] && nota "- ✅ DMARC: $dmarc" || nota "- ⚠️ Sin DMARC (recomendado: v=DMARC1; p=none)"
+          nota "Si falta algo: cPanel de Raiola → Email Deliverability (Entregabilidad de correo) → Repair/Reparar."
