@@ -525,9 +525,8 @@ final class Generador
                 $this->registrar($ruta, 'pages/dureza-municipio.twig', [
                     'pagina' => [
                         'titulo' => 'Dureza del agua en ' . $m['nombre'],
-                        'seo_title' => $this->tituloSeo(sprintf('Dureza del agua en %s: %s °fH (%s)', $m['nombre'], number_format($m['dureza_fh'], 0, ',', '.'), mb_strtolower($cat['nombre']))),
-                        'descripcion' => sprintf('El agua de %s tiene %s °fH (%s). Dato oficial del SINAC. Descubre si necesitas descalcificador u ósmosis y de qué tamaño.',
-                            $m['nombre'], number_format($m['dureza_fh'], 1, ',', '.'), mb_strtolower($cat['nombre'])),
+                        'seo_title' => $this->tituloMunicipio($m, $cat),
+                        'descripcion' => $this->descripcionMunicipio($m, $cat),
                         'entradilla' => $this->entradillaMunicipio($m, $media, (int) $posiciones[$m['ine']] + 1, count($municipios), $prov['nombre']),
                         'breadcrumbs' => $migas,
                         'schema' => $this->schemaMigas($migas),
@@ -619,6 +618,49 @@ final class Generador
     }
 
     /** Añade " | AguaSinCal" solo si el título no se pasa de 65 caracteres. */
+    /**
+     * Title de un municipio en 65 caracteres como mucho: se quitan primero la marca y luego la categoría; con nombres
+     * bilingües largos («Castelló de la Plana/Castellón de la Plana») se usa la última forma, la castellana.
+     */
+    private function tituloMunicipio(array $m, array $cat): string
+    {
+        $fh = number_format($m['dureza_fh'], 0, ',', '.');
+        $categoria = mb_strtolower($cat['nombre']);
+        $nombres = array_unique([$m['nombre'], self::nombreCorto($m['nombre'])]);
+        foreach ($nombres as $nombre) {
+            foreach ([
+                "Dureza del agua en $nombre: $fh °fH ($categoria) | {$this->site['nombre']}",
+                "Dureza del agua en $nombre: $fh °fH ($categoria)",
+                "Dureza del agua en $nombre: $fh °fH",
+            ] as $titulo) {
+                if (mb_strlen($titulo) <= 65) {
+                    return $titulo;
+                }
+            }
+        }
+        return 'Dureza del agua en ' . end($nombres) . ": $fh °fH";
+    }
+
+    private function descripcionMunicipio(array $m, array $cat): string
+    {
+        foreach (array_unique([$m['nombre'], self::nombreCorto($m['nombre'])]) as $nombre) {
+            $texto = sprintf('El agua de %s tiene %s °fH (%s). Dato oficial del SINAC. Descubre si necesitas descalcificador u ósmosis y de qué tamaño.',
+                $nombre, number_format($m['dureza_fh'], 1, ',', '.'), mb_strtolower($cat['nombre']));
+            if (mb_strlen($texto) <= 160) {
+                return $texto;
+            }
+        }
+        return sprintf('El agua de %s tiene %s °fH (%s). Dato oficial del SINAC y qué equipo necesitas.',
+            self::nombreCorto($m['nombre']), number_format($m['dureza_fh'], 1, ',', '.'), mb_strtolower($cat['nombre']));
+    }
+
+    /** «Alacant/Alicante» → «Alicante»: la última forma de los nombres bilingües del INE es la castellana. */
+    private static function nombreCorto(string $nombre): string
+    {
+        $partes = explode('/', $nombre);
+        return trim((string) end($partes));
+    }
+
     private function tituloSeo(string $titulo): string
     {
         $conMarca = $titulo . ' | ' . $this->site['nombre'];
