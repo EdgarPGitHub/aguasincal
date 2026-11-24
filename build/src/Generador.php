@@ -933,9 +933,10 @@ final class Generador
     {
         if (!empty($this->opciones['noindex'])) {
             // Vista previa: se deja rastrear para que Google vea el noindex (y retire URLs antiguas), sin sitemap.
-            return "User-agent: *\nDisallow: /presupuesto/\nDisallow: /accion/\nDisallow: /api/\nDisallow: /empresas/editar/\nDisallow: /empresas/acceso/\n";
+            return "User-agent: *\nDisallow: /accion/\nDisallow: /api/\nDisallow: /empresas/editar/\nDisallow: /empresas/acceso/\n";
         }
-        return "User-agent: *\nDisallow: /presupuesto/\nDisallow: /accion/\nDisallow: /api/\nDisallow: /empresas/editar/\nDisallow: /empresas/acceso/\n\nSitemap: {$this->site['url']}/sitemap.xml\n";
+        // /presupuesto/ no se bloquea: Google tiene que poder leer su noindex (si no, puede indexar la URL sin leerla).
+        return "User-agent: *\nDisallow: /accion/\nDisallow: /api/\nDisallow: /empresas/editar/\nDisallow: /empresas/acceso/\n\nSitemap: {$this->site['url']}/sitemap.xml\n";
     }
 
     private function htaccess(): string
@@ -963,6 +964,7 @@ final class Generador
             Options -Indexes
             DirectoryIndex index.html index.php
             ErrorDocument 404 /404.html
+            ErrorDocument 403 /404.html
             AddDefaultCharset UTF-8
             AddType application/manifest+json .webmanifest
             AddType image/svg+xml .svg
@@ -971,6 +973,13 @@ final class Generador
 
             $proteccion<IfModule mod_rewrite.c>
             RewriteEngine On
+            # Solo GET, HEAD y POST
+            RewriteCond %{REQUEST_METHOD} !^(GET|HEAD|POST)$
+            RewriteRule ^ - [R=405,L]
+            # Carpeta sin barra final: a la URL buena (https, sin www y con barra) en un solo salto
+            RewriteCond %{REQUEST_FILENAME} -d
+            RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:\d+)?$ [NC]
+            RewriteRule ^(.*[^/])$ https://$host/$1/ [L,R=301]
             # HTTPS y dominio sin www
             RewriteCond %{HTTPS} !=on [OR]
             RewriteCond %{HTTP_HOST} !^$hostRegex$ [NC]
@@ -980,6 +989,7 @@ final class Generador
             RewriteRule (^|/)\.(?!well-known/) - [F]
             RewriteRule (^|/)_ - [F]
             RewriteRule \.(sqlite|sql|log|md|lock|dist|bak|ini|sh)$ - [F,NC]
+            RewriteRule (^|/)error_log$ - [F,NC]
             # Directorio de empresas: páginas PHP
             RewriteRule ^sitemap-empresas\.xml$ empresas/index.php [L]
             RewriteCond %{REQUEST_FILENAME} !-f
@@ -987,6 +997,8 @@ final class Generador
             </IfModule>
 
             $redirecciones<IfModule mod_headers.c>
+            Header always unset X-Powered-By
+            Header unset X-Powered-By
             Header always set Strict-Transport-Security "max-age=31536000"
             Header always set X-Content-Type-Options "nosniff"
             Header always set X-Frame-Options "DENY"
@@ -996,9 +1008,13 @@ final class Generador
             <FilesMatch "\.(css|js|svg|png|jpe?g|webp|avif|woff2|mp4|vtt)$">
             Header set Cache-Control "public, max-age=31536000, immutable"
             </FilesMatch>
-            <FilesMatch "\.(html|xml|txt|json)$">
+            <FilesMatch "\.(html|xml|txt|json|csv)$">
             Header set Cache-Control "public, max-age=600"
             </FilesMatch>
+            # El favicon no lleva versión en la URL: caché de un día
+            <Files "favicon.svg">
+            Header set Cache-Control "public, max-age=86400"
+            </Files>
             </IfModule>
 
             <IfModule mod_deflate.c>

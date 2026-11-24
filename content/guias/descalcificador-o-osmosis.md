@@ -1,6 +1,6 @@
 ---
 titulo: "¿Descalcificador u ósmosis inversa? Diferencias y cuándo elegir cada uno"
-seo_title: "Descalcificador u ósmosis: diferencias y cuál necesitas | AguaSinCal"
+seo_title: "Descalcificador u ósmosis: diferencias y cuál elegir | AguaSinCal"
 descripcion: "Descalcificador y ósmosis inversa no hacen lo mismo. Te explicamos qué trata cada uno, cuándo basta con uno y cuándo conviene instalar los dos."
 entradilla: "Uno protege toda la casa; el otro mejora el agua que bebes. Muchas viviendas en zonas de agua dura acaban usando los dos."
 ruta: /guias/descalcificador-o-osmosis/

@@ -40,6 +40,11 @@ final class Empresas
         if ($ruta === '/sitemap-empresas.xml') {
             return $this->sitemap();
         }
+        // Una sola URL por página: sin barra final → con barra (301), conservando los parámetros.
+        if ($partes && !str_ends_with($ruta, '/') && preg_match('#^/[a-z0-9/-]+$#', $ruta)) {
+            $query = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_QUERY);
+            Http::redirigir($ruta . '/' . ($query !== '' ? '?' . $query : ''), 301);
+        }
         if (($partes[0] ?? '') === 'empresa' && count($partes) === 2) {
             return $this->ficha($partes[1]);
         }
@@ -135,7 +140,7 @@ final class Empresas
             Directorio::indexable($e),
             $migas,
         );
-        $pagina['seo_title'] = $e['nombre_comercial'] . $lugar . ' | AguaSinCal';
+        $pagina['seo_title'] = self::tituloSeo($e['nombre_comercial'] . $lugar);
         $negocio = ['@context' => 'https://schema.org', '@type' => 'LocalBusiness', 'name' => $e['nombre_comercial'], 'url' => $this->app->url($ruta)];
         if ($e['base']) {
             $negocio['address'] = ['@type' => 'PostalAddress', 'addressLocality' => $e['base']['nombre'], 'addressRegion' => $this->app->provincias()->nombre($e['base']['provincia']), 'addressCountry' => 'ES'];
@@ -289,6 +294,9 @@ final class Empresas
         $hoy = $this->hoy();
         $municipiosVistos = [];
         $publicadas = $this->directorio->publicadas();
+        if ($publicadas) {
+            $urls[] = ['/empresas/', null];
+        }
         foreach ($publicadas as $e) {
             if (Directorio::indexable($e)) {
                 $urls[] = ['/empresa/' . $e['slug'] . '/', substr((string) ($e['actualizado'] ?? $e['creado']), 0, 10)];
@@ -385,11 +393,18 @@ final class Empresas
         return (new \DateTimeImmutable('now', new \DateTimeZone('Europe/Madrid')))->format('Y-m-d');
     }
 
+    /** Título para Google: con la marca solo si cabe en 65 caracteres (lo que suele mostrar sin cortar). */
+    private static function tituloSeo(string $titulo): string
+    {
+        $conMarca = $titulo . ' | AguaSinCal';
+        return mb_strlen($conMarca) <= 65 ? $conMarca : $titulo;
+    }
+
     private function pagina(string $titulo, string $ruta, string $descripcion, bool $indexable, array $migas): array
     {
         return [
             'titulo' => $titulo,
-            'seo_title' => $titulo . ' | AguaSinCal',
+            'seo_title' => self::tituloSeo($titulo),
             'descripcion' => $descripcion,
             'ruta' => $ruta,
             'indexable' => $indexable,

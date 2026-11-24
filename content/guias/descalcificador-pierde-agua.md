@@ -1,6 +1,6 @@
 ---
 titulo: "El descalcificador pierde agua o no para de tirar agua al desagüe"
-seo_title: "Descalcificador pierde agua o tira agua sin parar: causas | AguaSinCal"
+seo_title: "Descalcificador pierde agua o no para: causas | AguaSinCal"
 descripcion: "Fugas en el descalcificador, depósito de sal que rebosa o agua corriendo al desagüe sin parar: causas habituales y qué hacer mientras llega el técnico."
 entradilla: "Primero, para la fuga. Después, localiza de dónde sale el agua: cada sitio apunta a una avería distinta."
 ruta: /guias/descalcificador-pierde-agua/

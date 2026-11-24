@@ -6,6 +6,7 @@ declare(strict_types=1);
  * Devuelve la instancia de App.
  */
 require dirname(__DIR__) . '/vendor/autoload.php';
+header_remove('X-Powered-By');
 
 $app = \AguaSinCal\App::desdeEntorno(dirname(__DIR__));
 

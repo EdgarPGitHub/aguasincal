@@ -72,7 +72,9 @@ final class GeneradorTest extends TestCase
         $this->assertStringNotContainsString('X-Robots-Tag', $htaccess, 'Sin modo vista previa no se bloquea la indexación');
         $indice = json_decode((string) file_get_contents(self::$salida . '/datos/municipios.json'), true);
         $this->assertContains('Vilaprova de Mar', array_column($indice, 'n'));
-        $this->assertStringContainsString('Disallow: /presupuesto/', (string) file_get_contents(self::$salida . '/robots.txt'));
+        $robots = (string) file_get_contents(self::$salida . '/robots.txt');
+        $this->assertStringContainsString('Disallow: /accion/', $robots);
+        $this->assertStringNotContainsString('Disallow: /presupuesto/', $robots, 'Google tiene que poder leer el noindex del formulario');
     }
 
     public function testPaginasLegalesConDatosDelTitular(): void

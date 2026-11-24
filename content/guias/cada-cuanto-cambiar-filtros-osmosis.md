@@ -1,6 +1,6 @@
 ---
 titulo: "Cada cuánto cambiar los filtros y la membrana de la ósmosis inversa"
-seo_title: "Cada cuánto cambiar los filtros de la ósmosis inversa | AguaSinCal"
+seo_title: "Cada cuánto cambiar los filtros de la ósmosis | AguaSinCal"
 descripcion: "Calendario de cambio de prefiltros, postfiltro, remineralizador y membrana de un equipo de ósmosis inversa doméstico, y señales de que toca cambiarlos antes."
 entradilla: "Un equipo de ósmosis con los filtros caducados puede dar peor agua que el grifo. Este es el calendario orientativo."
 ruta: /guias/cada-cuanto-cambiar-filtros-osmosis/
