@@ -166,8 +166,10 @@ final class App
             }
             Db::migrar($this->pdo, $this->raiz . '/migrations');
             // Fichas del directorio añadidas por nosotros (solo hace algo cuando cambia data/empresas.csv).
+            // Los tests lo desactivan con 'empresas_csv' => '' para no depender de las fichas reales.
             try {
-                (new Directorio($this->pdo, $this->municipios(), $this->servicios()))->importar($this->raiz . '/data/empresas.csv');
+                (new Directorio($this->pdo, $this->municipios(), $this->servicios()))
+                    ->importar((string) $this->local('empresas_csv', $this->raiz . '/data/empresas.csv'));
             } catch (\Throwable $e) {
                 error_log('[directorio] No se pudo importar data/empresas.csv: ' . $e->getMessage());
             }

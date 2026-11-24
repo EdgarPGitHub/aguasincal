@@ -20,6 +20,7 @@ trait Apoyo
             'leads_email' => 'titular@ejemplo.test',
             'correo' => ['transporte' => 'archivo'],
             'url' => 'https://aguasincal.test',
+            'empresas_csv' => '',
         ]);
     }
 
