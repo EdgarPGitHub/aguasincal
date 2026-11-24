@@ -20,6 +20,11 @@ en local sin la conversación original. Lo más reciente manda sobre lo anterior
 - **Lanzada el 24-nov-2026:** web indexable (`INDEXAR=si`) y publicación automática al cambiar `main`
   (`DESPLIEGUE_ACTIVO=si`). Los cuatro secretos del panel y del correo están creados; el panel funciona con 2FA y las
   solicitudes de presupuesto llegan a info@aguasincal.es.
+- **Search Console** (cuenta de Edgar): propiedad `https://aguasincal.es/` verificada con archivo HTML (`config/site.php`
+  → `verificacion_google`, no quitarlo) y sitemap enviado: «Correcto», 1.395 páginas descubiertas el 24-nov.
+- Batería de pruebas del 24-nov: sin fallos críticos ni importantes; corregidos los menores (redirecciones en un salto,
+  405, sin X-Powered-By, robots, títulos). Pendientes menores: og:image, HSTS con includeSubDomains (revisar antes
+  que todos los subdominios del hosting van por HTTPS), registro CAA en el DNS y token del formulario de un solo uso.
 - 1.429 municipios con datos del SINAC (1.299 páginas de municipio indexables), 62 empresas en el directorio
   (`data/empresas.csv`), 10 guías, 6 servicios, 1 vídeo. Los datos del SINAC se actualizan y publican solos cada lunes.
 - **Despliegue incremental:** solo se suben los archivos que cambian (huellas en `aguasincal-data/subida-*.sha1`): ~1–2 min
@@ -35,8 +40,7 @@ en local sin la conversación original. Lo más reciente manda sobre lo anterior
 
 ## Pendiente, en este orden
 
-1. Search Console (propiedad de dominio con registro TXT en el DNS de Raiola, o de prefijo de URL con archivo de
-   verificación) y enviar `/sitemap.xml`. Luego Bing.
+1. Bing Webmaster Tools: importar el sitio desde Search Console.
 2. En el panel: activar la cobertura del profesional (provincias 08, 17, 25, 43, 29) y marcar como inválidas las 3
    solicitudes de prueba («PRUEBA … Claude (borrar)»).
 3. Vídeos: Edgar no da por buena la voz de Piper ni la calidad actual. Buscar una voz más natural y un método de vídeo
