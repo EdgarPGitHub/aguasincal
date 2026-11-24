@@ -11,6 +11,10 @@ return [
     'url' => 'https://aguasincal.es',
     'idioma' => 'es-ES',
 
+    // Archivos de verificación de Google Search Console (propiedad https://aguasincal.es/, cuenta de Edgar).
+    // No quitarlos: Google comprueba de vez en cuando que siguen ahí.
+    'verificacion_google' => ['googlea53576292087bba5.html'],
+
     // Se rellenan desde las variables TELEFONO y WHATSAPP (ver arriba).
     'telefono_visible' => '',
     'telefono_enlace' => '',
