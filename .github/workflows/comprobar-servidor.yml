@@ -135,3 +135,26 @@ jobs:
           [ -n "$dkim" ] && nota "- ✅ DKIM: ${dkim}…" || nota "- ❌ Sin DKIM (default._domainkey): lo que envíe la web puede ir a spam"
           [ -n "$dmarc" ] && nota "- ✅ DMARC: $dmarc" || nota "- ⚠️ Sin DMARC (recomendado: v=DMARC1; p=none)"
           nota "Si falta algo: cPanel de Raiola → Email Deliverability (Entregabilidad de correo) → Repair/Reparar."
+
+      - name: Envío de correo (SMTP, como la web)
+        if: always()
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_USUARIO: ${{ secrets.SMTP_USUARIO }}
+        run: |
+          nota() { echo "$1"; echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+          nota "## Envío de correo"
+          [ -n "$SMTP_PASS" ] || { nota "- ❌ Falta SMTP_PASS: la web guarda los emails en el servidor en vez de enviarlos"; exit 1; }
+          host=${SMTP_HOST:-mail.$DOMINIO}; usuario=${SMTP_USUARIO:-info@$DOMINIO}; para=${LEADS_EMAIL:-info@$DOMINIO}
+          printf 'From: AguaSinCal <%s>\r\nTo: %s\r\nSubject: Prueba de envio de AguaSinCal (GitHub)\r\nDate: %s\r\nMessage-ID: <%s@%s>\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nEmail de prueba enviado por la comprobacion del servidor con los mismos datos que usa la web.\r\nSi lo recibes, el envio funciona.\r\n' \
+            "$usuario" "$para" "$(date -R)" "$(date +%s).$RANDOM" "$DOMINIO" > /tmp/prueba.eml
+          if salida=$(curl -sS --max-time 60 --ssl-reqd "smtps://$host:465" --user "$usuario:$SMTP_PASS" \
+                --mail-from "$usuario" --mail-rcpt "$para" -T /tmp/prueba.eml 2>&1); then
+            nota "- ✅ $host aceptó el email de prueba de $usuario para $para. Si no llega en unos minutos, mira la carpeta de spam y los filtros de spam de cPanel."
+          else
+            nota "- ❌ No se pudo enviar por $host con $usuario: ${salida//$SMTP_PASS/***}"
+            case "$salida" in
+              *535*|*"Login denied"*|*authentication*) nota "  La contraseña SMTP_PASS no es la del buzón $usuario (o el buzón no existe): cámbiala en cPanel → Cuentas de correo y actualiza el secreto." ;;
+            esac
+            exit 1
+          fi
