@@ -24,6 +24,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      completa:
+        description: 'Subir toda la web (si no, solo los archivos que han cambiado)'
+        type: boolean
+        default: false
 
 concurrency:
   group: despliegue
@@ -152,6 +157,7 @@ jobs:
           FTP_USUARIO: ${{ secrets.FTP_USUARIO }}
           LFTP_PASSWORD: ${{ secrets.FTP_CLAVE }}
           FTP_VERIFICAR_CERT: ${{ vars.FTP_VERIFICAR_CERT || 'si' }}
+          SUBIDA_COMPLETA: ${{ inputs.completa && 'si' || 'no' }}
         run: |
           sudo apt-get install -y -qq lftp > /dev/null
           scripts/desplegar-ftp.sh dist paquete config.local.php

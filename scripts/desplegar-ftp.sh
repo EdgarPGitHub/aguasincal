@@ -41,14 +41,58 @@ if timeout 90 lftp -c "$AJUSTES; $CONECTAR; cat \"$CARPETA_PUBLICA/.htaccess\"" 
   echo "  bloque conservado"
 fi
 
+TRABAJO=$(mktemp -d)
+
+# Sube una carpeta comparando por contenido: en aguasincal-data/subida-<nombre>.sha1 queda la huella de cada archivo
+# subido, y la siguiente vez solo se suben los nuevos o cambiados y se borran los que ya no existen (lo demás del
+# servidor no se toca). Sin esa lista, con SUBIDA_COMPLETA=si o si cambian muchos archivos, se sube todo con mirror.
+subir() {
+  local origen=$1 destino=$2 nombre=$3; shift 3
+  local nuevo="$TRABAJO/nuevo-$nombre" viejo="$TRABAJO/viejo-$nombre" lista="aguasincal-data/subida-$nombre.sha1"
+  (cd "$origen" && find . -type f -print0 | sort -z | xargs -0 sha1sum) > "$nuevo"
+  local completa=si
+  if [ "${SUBIDA_COMPLETA:-no}" != "si" ] \
+     && timeout 90 lftp -c "$AJUSTES; $CONECTAR; get \"$lista\" -o \"$viejo\"" < /dev/null > /dev/null 2>&1 && [ -s "$viejo" ]; then
+    completa=no
+  fi
+  if [ "$completa" = "no" ]; then
+    comm -13 <(sort "$viejo") <(sort "$nuevo") | cut -c43- > "$TRABAJO/cambiados-$nombre"
+    comm -23 <(cut -c43- "$viejo" | sort) <(cut -c43- "$nuevo" | sort) > "$TRABAJO/borrados-$nombre"
+    local cambiados borrados
+    cambiados=$(grep -c . "$TRABAJO/cambiados-$nombre" || true)
+    borrados=$(grep -c . "$TRABAJO/borrados-$nombre" || true)
+    if [ "$cambiados" -gt 400 ]; then
+      echo "  $nombre: $cambiados archivos cambiados; se sube todo"
+      completa=si
+    else
+      echo "  $nombre: $cambiados archivos nuevos o cambiados, $borrados borrados"
+      {
+        echo "$AJUSTES; $CONECTAR"
+        sed 's#^\./##' "$TRABAJO/cambiados-$nombre" | xargs -r -n1 dirname | sort -u | { grep -v '^\.$' || true; } \
+          | while read -r d; do echo "mkdir -p -f \"$destino/$d\""; done
+        sed 's#^\./##' "$TRABAJO/cambiados-$nombre" | while read -r f; do echo "put \"$origen/$f\" -o \"$destino/$f\""; done
+        sed 's#^\./##' "$TRABAJO/borrados-$nombre" | while read -r f; do echo "rm -f \"$destino/$f\""; done
+      } > "$TRABAJO/ordenes-$nombre"
+      timeout 1200 lftp -f "$TRABAJO/ordenes-$nombre" < /dev/null
+    fi
+  fi
+  if [ "$completa" = "si" ]; then
+    echo "  $nombre: subida completa"
+    timeout 1200 lftp -c "$AJUSTES; $CONECTAR; mkdir -p -f \"$destino\";
+      mirror -R --delete --parallel=6 --no-perms --verbose=1 $* \"$origen/\" \"$destino/\"" < /dev/null
+  fi
+  # La lista se guarda solo si todo lo anterior ha ido bien (set -e)
+  timeout 90 lftp -c "$AJUSTES; $CONECTAR; put \"$nuevo\" -o \"$lista\"" < /dev/null
+}
+
 echo "→ Subiendo aplicación, configuración y web"
-timeout 1200 lftp -c "$AJUSTES; $CONECTAR;
+timeout 90 lftp -c "$AJUSTES; $CONECTAR;
 mkdir -p -f aguasincal-app; mkdir -p -f aguasincal-data; mkdir -p -f \"$CARPETA_PUBLICA\";
-chmod 700 aguasincal-data || echo 'aviso: el servidor no permite chmod en aguasincal-data';
-mirror -R --delete --parallel=6 --no-perms --verbose=1 \"$PAQUETE/\" aguasincal-app/;
-put \"$CONFIG\" -o aguasincal-data/config.local.php;
-chmod 600 aguasincal-data/config.local.php || echo 'aviso: el servidor no permite chmod en config.local.php';
-mirror -R --delete --parallel=6 --no-perms --verbose=1 \
-  --exclude-glob .well-known/ --exclude-glob cgi-bin/ --exclude-glob .user.ini --exclude-glob php.ini --exclude-glob error_log \
-  \"$DIST/\" \"$CARPETA_PUBLICA/\"" < /dev/null
+chmod 700 aguasincal-data || echo 'aviso: el servidor no permite chmod en aguasincal-data'" < /dev/null
+subir "$PAQUETE" aguasincal-app app
+timeout 90 lftp -c "$AJUSTES; $CONECTAR; put \"$CONFIG\" -o aguasincal-data/config.local.php;
+chmod 600 aguasincal-data/config.local.php || echo 'aviso: el servidor no permite chmod en config.local.php'" < /dev/null
+subir "$DIST" "$CARPETA_PUBLICA" web \
+  --exclude-glob .well-known/ --exclude-glob cgi-bin/ --exclude-glob .user.ini --exclude-glob php.ini --exclude-glob error_log
+rm -rf "$TRABAJO"
 echo "✓ Subida completada"
