@@ -65,6 +65,8 @@ Hay un borrador en [acuerdo-profesional.md](acuerdo-profesional.md).
    - Cuota: ilimitada.
    - **Servidor FTP:** el nombre del servidor de Raiola, del tipo `comXXXX.raiolanetworks.es` (aguasincal.es está en `com1014.raiolanetworks.es`). No uses `ftp.aguasincal.es` ni la IP: el certificado de cifrado solo es válido para `*.raiolanetworks.es`. La comprobación del Paso 4.3 te lo muestra si no lo sabes.
 4. **Correo (ya tienes info@).** En **Email Deliverability**, deja SPF y DKIM en verde (botón «Reparar» si sale en rojo).
+   En **Cuentas de correo → info@ → Administrar**, «Iniciando sesión» tiene que estar en **Permitir**: la web entra en
+   el buzón para enviar, y con «Suspender» no sale ningún email.
 5. **Menos spam en info@:**
    - **Dirección predeterminada** (Default Address) → «Descartar con un error al remitente». Si ahora recoge todo lo que llega a direcciones que no existen, aquí entra mucho spam.
    - **Filtros de spam** (Spam Filters):

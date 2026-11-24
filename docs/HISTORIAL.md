@@ -17,31 +17,34 @@ en local sin la conversación original. Lo más reciente manda sobre lo anterior
 
 ## Estado a 24-nov-2026
 
-- Web publicada en https://aguasincal.es en **vista previa (noindex)**: variable de GitHub `INDEXAR` sin crear (= `no`).
-- 1.429 municipios con datos del SINAC (1.299 páginas de municipio indexables), directorio de empresas vacío, 10 guías,
-  6 servicios, 1 vídeo.
-- Los datos del SINAC se actualizan solos cada lunes (workflow «Datos del agua»), pero **no se publican solos** hasta
-  crear la variable `DESPLIEGUE_ACTIVO=si`.
+- **Lanzada el 24-nov-2026:** web indexable (`INDEXAR=si`) y publicación automática al cambiar `main`
+  (`DESPLIEGUE_ACTIVO=si`). Los cuatro secretos del panel y del correo están creados; el panel funciona con 2FA y las
+  solicitudes de presupuesto llegan a info@aguasincal.es.
+- 1.429 municipios con datos del SINAC (1.299 páginas de municipio indexables), 62 empresas en el directorio
+  (`data/empresas.csv`), 10 guías, 6 servicios, 1 vídeo. Los datos del SINAC se actualizan y publican solos cada lunes.
+- **Despliegue incremental:** solo se suben los archivos que cambian (huellas en `aguasincal-data/subida-*.sha1`): ~1–2 min
+  en vez de ~12. Con más de 400 cambios, o con «Subir toda la web» al lanzarlo a mano, se sube todo.
 - Hosting Raiola: `FTP_HOST = com1014.raiolanetworks.es` (el nombre del certificado; `ftp.aguasincal.es` no vale).
-  DNS en Raiola. Correo del dominio **bien configurado** (MX, SPF, DKIM y DMARC con `p=quarantine`), comprobado con el
-  workflow «Comprobar servidor».
+  DNS en Raiola. Correo del dominio bien configurado (MX, SPF, DKIM y DMARC con `p=quarantine`). «Comprobar servidor»
+  envía además un email de prueba por SMTP y muestra los últimos errores de correo de la web.
+- **Ojo con el buzón info@:** en cPanel → Cuentas de correo → Administrar, «Iniciando sesión» debe estar en **Permitir**.
+  Con «Suspender» la web no puede enviar («Login denied» / «Could not authenticate»). Pasó el 24-nov.
+- **Trabajo en local (Windows):** Claude maneja GitHub con `gh` (portátil, en `%LOCALAPPDATA%\aguasincal-herramientas`,
+  autorizado una vez); Edgar no entra en GitHub. Los secretos los escribe él: `gh secret set NOMBRE --body (Get-Clipboard).Trim()`
+  en la terminal, con el valor copiado.
 
 ## Pendiente, en este orden
 
-1. **Secretos de GitHub** (Settings → Secrets and variables → Actions → Secrets): `SMTP_PASS` (contraseña del buzón
-   info@aguasincal.es, crearlo en cPanel si no existe), `ADMIN_EMAIL`, `ADMIN_CLAVE` (≥ 12 caracteres) y `PANEL_RUTA`
-   (minúsculas, números y guiones). Hoy faltan los cuatro: el panel está cerrado y los emails se guardan en el servidor
-   (`aguasincal-data/correo/`) en vez de enviarse.
-2. Publicar (Actions → Despliegue → Run workflow) y hacer una **solicitud de presupuesto de prueba**: comprobar que llega
-   el email y que se ve en el panel.
-3. Variables: `INDEXAR=si` y `DESPLIEGUE_ACTIVO=si`, y publicar. El despliegue **se niega a lanzar** con `INDEXAR=si` si
-   faltan los secretos del punto 1, y comprueba que desaparece el noindex y que robots.txt enlaza el sitemap.
-4. Search Console (propiedad de dominio con registro TXT en el DNS de Raiola) y enviar `/sitemap.xml`. Luego Bing.
-5. Vídeo de la ósmosis inversa (mismo estilo y voz), después fuentes de agua osmotizada.
-6. Cargar empresas en el directorio (ver más abajo).
-7. Guías nuevas según [ideas-webs-referencia.md](ideas-webs-referencia.md) y el estudio de keywords.
-8. Imágenes: mapa de España de dureza con los datos (se actualiza solo), mapas por provincia, esquemas para las guías.
-9. Precio y alcance de la ficha destacada (sin decidir; propuesta abajo).
+1. Search Console (propiedad de dominio con registro TXT en el DNS de Raiola, o de prefijo de URL con archivo de
+   verificación) y enviar `/sitemap.xml`. Luego Bing.
+2. En el panel: activar la cobertura del profesional (provincias 08, 17, 25, 43, 29) y marcar como inválidas las 3
+   solicitudes de prueba («PRUEBA … Claude (borrar)»).
+3. Vídeos: Edgar no da por buena la voz de Piper ni la calidad actual. Buscar una voz más natural y un método de vídeo
+   de más calidad antes de publicar más (el de la ósmosis está montado solo en local, sin subir).
+4. Revisar el resto de la lista de empresas candidatas y escribirles en tandas pequeñas.
+5. Guías nuevas según [ideas-webs-referencia.md](ideas-webs-referencia.md) y el estudio de keywords.
+6. Imágenes: mapa de España de dureza con los datos (se actualiza solo), mapas por provincia, esquemas para las guías.
+7. Precio y alcance de la ficha destacada (sin decidir; propuesta abajo).
 
 ## Decisiones tomadas
 
