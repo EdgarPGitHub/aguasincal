@@ -158,3 +158,21 @@ jobs:
             esac
             exit 1
           fi
+
+      - name: Errores recientes de la web (correo y avisos)
+        if: always()
+        run: |
+          nota() { echo "$1"; echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+          nota "## Errores recientes de la web"
+          command -v lftp > /dev/null || sudo apt-get install -y -qq lftp > /dev/null
+          VERIFICAR=yes; [ "$FTP_VERIFICAR_CERT" = "no" ] && VERIFICAR=no
+          AJUSTES="set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate $VERIFICAR; set ftp:passive-mode true; set net:timeout 30; set net:max-retries 2"
+          CONECTAR="open --env-password -u \"$FTP_USUARIO\" -p $FTP_PORT \"$FTP_HOST\""
+          timeout 90 lftp -c "$AJUSTES; $CONECTAR; get aguasincal-data/logs/php-error.log -o /tmp/php-error.log" < /dev/null > /dev/null 2>&1 || true
+          pendientes=$(timeout 90 lftp -c "$AJUSTES; $CONECTAR; cls -1 aguasincal-data/correo/" < /dev/null 2>/dev/null | grep -c '\.eml$' || true)
+          [ "${pendientes:-0}" -gt 0 ] && nota "- ⚠️ Hay $pendientes emails guardados en aguasincal-data/correo/ (la web los guardó en vez de enviarlos: faltaba SMTP_PASS)"
+          if [ ! -s /tmp/php-error.log ]; then nota "- ✅ Sin registro de errores de PHP"; exit 0; fi
+          # El repositorio es público: solo líneas de la web y con los emails ajenos tapados.
+          lineas=$(grep -E '\[(correo|leads|aguasincal|directorio|mantenimiento)\]' /tmp/php-error.log | tail -n 15 \
+            | sed -E "s/[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+)/***@\1/g; s/\*\*\*@$DOMINIO/info@$DOMINIO/g" | cut -c1-300)
+          if [ -z "$lineas" ]; then nota "- ✅ Sin errores de correo ni de la web"; else nota "Últimas líneas:"; echo "$lineas" | while IFS= read -r l; do nota "    $l"; done; fi
