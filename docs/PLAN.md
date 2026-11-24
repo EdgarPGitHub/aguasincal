@@ -7,6 +7,8 @@
 > - **Contenidos:** firmados por «Equipo AguaSinCal» con fuentes y metodología públicas. Si un técnico revisa una guía, sale su nombre.
 > - **Aplazado:** noticias automáticas (poco valor SEO con la web nueva, riesgo de penalización, otra pieza que vigilar), AdSense (requiere banner de cookies; cuando haya tráfico), piscinas.
 >
+> Historial de decisiones y estado al pasar a local: [HISTORIAL.md](HISTORIAL.md).
+>
 > Plan aprobado el 5-oct-2026. Cambios posteriores: vista previa sin contraseña (noindex), teléfono y WhatsApp como variables de GitHub, un solo buzón (info@), publicación por FTP (sin SSH ni cron) y clave de la app generada en el servidor. Los pasos vigentes están en [PASOS.md](PASOS.md).
 
 ## Contexto
